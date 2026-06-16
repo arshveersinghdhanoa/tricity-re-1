@@ -1,0 +1,17 @@
+{
+  "name": "tricity-re",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @tricity/web dev",
+    "build": "pnpm --filter @tricity/core build && pnpm --filter @tricity/pipeline build && pnpm --filter @tricity/web build",
+    "test": "pnpm --filter @tricity/core build && pnpm --filter @tricity/pipeline build && pnpm --filter @tricity/core test && pnpm --filter @tricity/pipeline test && pnpm --filter @tricity/web test",
+    "lint": "pnpm --filter @tricity/web lint",
+    "pipeline:inspect": "pnpm --filter @tricity/pipeline inspect",
+    "pipeline:dry-run": "pnpm --filter @tricity/pipeline dry-run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
