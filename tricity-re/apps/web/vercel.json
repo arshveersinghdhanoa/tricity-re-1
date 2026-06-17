@@ -1,7 +1,5 @@
 {
   "framework": "nextjs",
-  "nodeVersion": "22.x",
-  "buildCommand": "pnpm --filter @tricity/web build",
-  "installCommand": "pnpm install",
-  "outputDirectory": "apps/web/.next"
+  "buildCommand": "pnpm --filter @tricity/core build && pnpm --filter @tricity/web build",
+  "installCommand": "pnpm install"
 }
