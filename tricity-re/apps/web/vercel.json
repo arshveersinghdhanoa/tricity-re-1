@@ -1,6 +1,0 @@
-{
-  "framework": "nextjs",
-  "buildCommand": "pnpm --filter @tricity/web build",
-  "installCommand": "pnpm install",
-  "outputDirectory": ".next"
-}
