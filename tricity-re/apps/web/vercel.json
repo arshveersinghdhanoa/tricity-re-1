@@ -1,7 +1,6 @@
 {
   "framework": "nextjs",
-  "rootDirectory": "apps/web",
-  "buildCommand": "cd ../.. && pnpm build",
-  "installCommand": "cd ../.. && pnpm install",
-  "outputDirectory": ".next"
+  "buildCommand": "pnpm --filter @tricity/web build",
+  "installCommand": "pnpm install",
+  "outputDirectory": "apps/web/.next"
 }
