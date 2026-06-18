@@ -1,0 +1,85 @@
+name: Data Pipeline — Daily Scrape & Promote
+
+on:
+  schedule:
+    # Daily at 02:00 UTC (off-peak window 18:00-06:00 UTC)
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      portal:
+        description: "Portal to scrape (psrera or gmada)"
+        default: "psrera"
+        required: false
+      limit:
+        description: "Max records to promote"
+        default: "100"
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9"
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          cache-dependency-path: tricity-re/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: tricity-re
+        run: pnpm install --frozen-lockfile
+
+      - name: Build pipeline
+        working-directory: tricity-re
+        run: pnpm --filter @tricity/pipeline build
+
+      - name: Scrape PSRERA
+        id: scrape
+        working-directory: tricity-re
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "SCRAPE_RESULT=$(pnpm --filter @tricity/pipeline scrape --portal=${{ github.event.inputs.portal || 'psrera' }} 2>&1)" >> $GITHUB_ENV
+
+      - name: Promote records to production
+        id: promote
+        working-directory: tricity-re
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "PROMOTE_RESULT=$(pnpm --filter @tricity/pipeline promote --limit=${{ github.event.inputs.limit || '100' }} 2>&1)" >> $GITHUB_ENV
+
+      - name: Revalidate site cache
+        working-directory: tricity-re
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          REVALIDATION_SECRET: ${{ secrets.REVALIDATION_SECRET }}
+        run: |
+          if [ -n "$SITE_URL" ] && [ -n "$REVALIDATION_SECRET" ]; then
+            curl -X POST "$SITE_URL/api/revalidate" \
+              -H "Content-Type: application/json" \
+              -d "{\"secret\":\"$REVALIDATION_SECRET\"}" \
+              --fail --silent --show-error
+            echo "Revalidation triggered"
+          else
+            echo "SITE_URL or REVALIDATION_SECRET not set — skipping revalidation"
+          fi
