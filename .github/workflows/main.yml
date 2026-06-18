@@ -1,0 +1,14 @@
+name: Data Pipeline — Daily Scrape & Promote
+on:
+  workflow_dispatch:  # allows manual runs
+  schedule:
+    - cron: '0 0 * * *'  # runs daily at midnight
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Run data pipeline
+        run: echo "Running daily scrape and promote..."
