@@ -73,7 +73,7 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
           tenant_id: tenantId,
           rera_number: row.rera_number,
           name: row.parsed_name ?? row.rera_number,
-          slug: slugify(row.parsed_name ?? row.rera_number),
+          slug: slugify(row.parsed_name ?? row.rera_number, row.rera_number),
           status: row.parsed_status ?? "active",
           description: `Imported from PSRERA PDF. District: ${(row.raw_payload as Record<string, unknown>)?.district ?? "unknown"}`,
         })
@@ -108,10 +108,12 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
   return { promoted, skipped, errors };
 }
 
-function slugify(text: string): string {
-  return text
+function slugify(text: string, reraNumber: string): string {
+  const base = text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 100);
+    .slice(0, 80);
+  const suffix = reraNumber.toLowerCase().replace(/[^a-z0-9]/g, "").slice(-6);
+  return `${base}-${suffix}`;
 }
