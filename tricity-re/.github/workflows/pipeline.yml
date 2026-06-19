@@ -51,6 +51,12 @@ jobs:
         working-directory: tricity-re
         run: pnpm --filter @tricity/pipeline build
 
+      - name: Download PSRERA PDF
+        working-directory: tricity-re
+        run: |
+          mkdir -p tmp
+          curl -sL -o tmp/registered-projects.pdf "https://rera.punjab.gov.in/pdf/registered-projects/List_of_Registered_Projects.pdf" || echo "Download failed — will use cached PDF if available"
+
       - name: Scrape PSRERA
         id: scrape
         working-directory: tricity-re
