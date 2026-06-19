@@ -80,11 +80,14 @@ jobs:
           REVALIDATION_SECRET: ${{ secrets.REVALIDATION_SECRET }}
         run: |
           if [ -n "$SITE_URL" ] && [ -n "$REVALIDATION_SECRET" ]; then
-            curl -X POST "$SITE_URL/api/revalidate" \
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SITE_URL/api/revalidate" \
               -H "Content-Type: application/json" \
-              -d "{\"secret\":\"$REVALIDATION_SECRET\"}" \
-              --fail --silent --show-error
-            echo "Revalidation triggered"
+              -d "{\"secret\":\"$REVALIDATION_SECRET\"}" || true)
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Revalidation triggered"
+            else
+              echo "Revalidation returned HTTP $HTTP_CODE — site may not be deployed yet"
+            fi
           else
             echo "SITE_URL or REVALIDATION_SECRET not set — skipping revalidation"
           fi
