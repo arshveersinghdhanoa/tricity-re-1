@@ -27,7 +27,7 @@ Ensure these environment variables are set (in Vercel for automated runs, or in 
 pnpm pipeline:scrape
 
 # 2. Promote valid staging rows → production projects table
-pnpm pipeline:promete
+pnpm pipeline:promote
 
 # 3. Trigger ISR revalidation (or wait for next cron)
 curl -X POST https://newchandigarh.in/api/revalidate \
@@ -47,7 +47,7 @@ This parses the PDF and validates records without writing anything. Use to check
 
 ```bash
 pnpm pipeline:scrape --tenant=nayagaon
-pnpm pipeline:promete --tenant=ajitgarh --limit=20
+pnpm pipeline:promote --tenant=ajitgarh --limit=20
 ```
 
 ### Automated (GitHub Actions)
@@ -148,14 +148,15 @@ Leads are submitted via the contact form on each tenant site. The system scores 
 
 | Criterion | Points |
 |---|---|
-| Phone provided | +10 |
-| Email provided | +10 |
-| Message length > 50 chars | +10 |
-| Budget provided | +15 |
-| Timeline "immediate" | +20 |
-| Timeline "3months" | +10 |
-| Timeline "6months" | +5 |
+| Phone (≥10 digits) | +20 |
+| Name (≥2 chars) | +10 |
+| Email (contains @) | +10 |
 | Project specified | +15 |
+| Message (≥20 chars) | +10 |
+| Budget (≥₹50 lakh) | +15 |
+| Timeline "immediate" | +25 |
+| Timeline "3months" | +15 |
+| Timeline "6months" | +5 |
 
 **Hot lead threshold:** score ≥ 60
 
