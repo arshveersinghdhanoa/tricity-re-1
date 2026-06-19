@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { PORTALS, SCRAPER_CONFIG } from "../config.js";
 
-const LOCAL_FALLBACK = path.resolve("tmp/registered-projects.pdf");
+const LOCAL_FALLBACK = path.resolve(__dirname, "../../tmp/registered-projects.pdf");
 
 export async function downloadPdf(url?: string): Promise<{ buffer: Buffer; url: string }> {
   if (fs.existsSync(LOCAL_FALLBACK)) {
