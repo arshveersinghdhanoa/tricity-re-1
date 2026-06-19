@@ -1,7 +1,10 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { PORTALS, SCRAPER_CONFIG } from "../config.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const LOCAL_FALLBACK = path.resolve(__dirname, "../../tmp/registered-projects.pdf");
 
 export async function downloadPdf(url?: string): Promise<{ buffer: Buffer; url: string }> {
