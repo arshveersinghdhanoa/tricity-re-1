@@ -56,8 +56,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          echo "SCRAPE_RESULT=$(pnpm --filter @tricity/pipeline scrape --portal=${{ github.event.inputs.portal || 'psrera' }} 2>&1)" >> $GITHUB_ENV
+        run: pnpm --filter @tricity/pipeline scrape --portal=${{ github.event.inputs.portal || 'psrera' }}
 
       - name: Promote records to production
         id: promote
@@ -65,8 +64,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          echo "PROMOTE_RESULT=$(pnpm --filter @tricity/pipeline promote --limit=${{ github.event.inputs.limit || '100' }} 2>&1)" >> $GITHUB_ENV
+        run: pnpm --filter @tricity/pipeline promote --limit=${{ github.event.inputs.limit || '100' }}
 
       - name: Revalidate site cache
         working-directory: tricity-re
