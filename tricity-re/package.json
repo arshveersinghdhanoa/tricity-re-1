@@ -8,7 +8,9 @@
     "test": "pnpm --filter @tricity/core build && pnpm --filter @tricity/pipeline build && pnpm --filter @tricity/core test && pnpm --filter @tricity/pipeline test && pnpm --filter @tricity/web test",
     "lint": "pnpm --filter @tricity/web lint",
     "pipeline:inspect": "pnpm --filter @tricity/pipeline inspect",
-    "pipeline:dry-run": "pnpm --filter @tricity/pipeline dry-run"
+    "pipeline:dry-run": "pnpm --filter @tricity/pipeline dry-run",
+    "pipeline:scrape": "pnpm --filter @tricity/pipeline scrape",
+    "pipeline:promote": "pnpm --filter @tricity/pipeline promote"
   },
   "engines": {
     "node": ">=20"

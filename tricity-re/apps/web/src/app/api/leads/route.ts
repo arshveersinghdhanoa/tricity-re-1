@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { scoreLead } from "@tricity/core";
 import { getServiceSupabase } from "@/lib/supabase";
 import { resolveTenant } from "@/lib/tenant";
+import { sendHotLeadNotification } from "@/lib/notify";
 
 const rateLimit = new Map<string, { count: number; reset: number }>();
 const RATE_LIMIT = 5;
@@ -35,6 +36,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Valid phone required" }, { status: 400 });
   }
 
+  const budget = body.budget ? Number(body.budget) : undefined;
+  const timeline = body.timeline as "immediate" | "3months" | "6months" | "exploring" | undefined;
+
   const tenant = await resolveTenant();
   const { score, isHot } = scoreLead({
     phone,
@@ -42,6 +46,8 @@ export async function POST(request: Request) {
     email: body.email,
     message: body.message,
     projectSlug: body.projectSlug,
+    budget,
+    timeline,
   });
 
   const supabase = getServiceSupabase();
@@ -62,14 +68,25 @@ export async function POST(request: Request) {
         project_slug: body.projectSlug ?? null,
         score,
         is_hot: isHot,
-        context: { ip },
+        context: { ip, budget, timeline },
         source_page: body.sourcePage ?? "/",
       });
     }
   }
 
   if (isHot) {
-    // TODO(Milestone 4): deliver hot-lead notification to Client-configured destination
+    sendHotLeadNotification({
+      name: body.name ?? null,
+      phone,
+      email: body.email ?? null,
+      message: body.message ?? null,
+      projectSlug: body.projectSlug ?? null,
+      score,
+      sourcePage: body.sourcePage ?? null,
+      tenantSlug: tenant.slug,
+      budget,
+      timeline,
+    });
   }
 
   const whatsapp = tenant.contact.whatsappNumber.replace(/\D/g, "");

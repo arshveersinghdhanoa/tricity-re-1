@@ -22,6 +22,8 @@ export function LeadForm({ projectSlug }: { projectSlug?: string }) {
           email: data.get("email"),
           message: data.get("message"),
           projectSlug: projectSlug ?? data.get("projectSlug"),
+          budget: data.get("budget") ? Number(data.get("budget")) : undefined,
+          timeline: data.get("timeline") || undefined,
           website: data.get("website"),
         }),
       });
@@ -77,6 +79,38 @@ export function LeadForm({ projectSlug }: { projectSlug?: string }) {
           type="email"
           className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2"
         />
+      </div>
+
+      <div>
+        <label htmlFor="budget" className="block text-sm font-medium text-stone-700">
+          Budget (₹)
+        </label>
+        <input
+          id="budget"
+          name="budget"
+          type="number"
+          min={0}
+          step={100000}
+          placeholder="e.g. 5000000"
+          className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="timeline" className="block text-sm font-medium text-stone-700">
+          Timeline
+        </label>
+        <select
+          id="timeline"
+          name="timeline"
+          className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2"
+        >
+          <option value="">Select...</option>
+          <option value="immediate">Immediate</option>
+          <option value="3months">Within 3 months</option>
+          <option value="6months">Within 6 months</option>
+          <option value="exploring">Just exploring</option>
+        </select>
       </div>
 
       <div>

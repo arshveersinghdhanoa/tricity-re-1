@@ -9,23 +9,25 @@ export type PortalId = "psrera" | "gmada";
 
 export const PORTALS: Record<
   PortalId,
-  { name: string; baseUrl: string; robotsUrl: string; selectors: Record<string, string> }
+  { name: string; baseUrl: string; robotsUrl: string; pdfUrl: string; selectors: Record<string, string> }
 > = {
   psrera: {
     name: "PSRERA Punjab",
     baseUrl: "https://rera.punjab.gov.in",
     robotsUrl: "https://rera.punjab.gov.in/robots.txt",
+    pdfUrl: "https://rera.punjab.gov.in/pdf/registered-projects/List_of_Registered_Projects.pdf",
     selectors: {
-      projectList: "PLACEHOLDER — map in Milestone 3 after M2 approval",
-      projectDetail: "PLACEHOLDER",
-      reraNumber: "PLACEHOLDER",
-      status: "PLACEHOLDER",
+      projectList: "PDF at /pdf/registered-projects/List_of_Registered_Projects.pdf (mapped M3)",
+      projectDetail: "PDF-parsed — see psrera/parser.ts",
+      reraNumber: "PDF-parsed — regex /PBRERA-[A-Z0-9]+-[A-Z]{1,2}\\d{3,}/",
+      status: "PDF-parsed — typeOfProject field from tabular PDF",
     },
   },
   gmada: {
     name: "GMADA",
     baseUrl: "https://gmada.gov.in",
     robotsUrl: "https://gmada.gov.in/robots.txt",
+    pdfUrl: "",
     selectors: {
       projectList: "PLACEHOLDER — map in Milestone 3 after M2 approval",
       allotmentList: "PLACEHOLDER",
