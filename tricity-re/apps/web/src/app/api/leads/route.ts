@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   }
 
   if (isHot) {
-    sendHotLeadNotification({
+    const notified = await sendHotLeadNotification({
       name: body.name ?? null,
       phone,
       email: body.email ?? null,
@@ -87,6 +87,7 @@ export async function POST(request: Request) {
       budget,
       timeline,
     });
+    if (!notified) console.log(`[leads] Hot lead notification not sent for ${phone}`);
   }
 
   const whatsapp = tenant.contact.whatsappNumber.replace(/\D/g, "");
