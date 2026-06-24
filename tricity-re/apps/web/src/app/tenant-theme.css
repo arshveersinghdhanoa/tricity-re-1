@@ -1,0 +1,19 @@
+/* apps/web/src/app/tenant-theme.css */
+:root {
+  --primary-color: #3498db; /* default fallback */
+  --background-color: #ffffff;
+  --text-color: #212529;
+}
+
+/* Tenant-specific overrides */
+.tenant-newchandigarh {
+  --primary-color: #0066ff; /* blue */
+}
+
+.tenant-nayagaon {
+  --primary-color: #ff6600; /* orange */
+}
+
+.tenant-ajitgarh {
+  --primary-color: #28a745; /* green */
+}

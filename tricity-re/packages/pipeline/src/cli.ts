@@ -1,9 +1,47 @@
 #!/usr/bin/env node
 import { inspectAll, inspectPortal } from "./inspect.js";
-import { scrapePsrera } from "./scrape.js";
+import { scrapePsrera, scrapeGmada } from "./scrape.js";
 import { promoteProjects } from "./promote.js";
 import type { PortalId } from "./config.js";
 import { PORTALS } from "./config.js";
+
+import fs from "fs";
+import path from "path";
+
+// Simple env file loader for development convenience
+function loadEnv() {
+  let currentDir = process.cwd();
+  while (currentDir) {
+    const p = path.join(currentDir, ".env.local");
+    if (fs.existsSync(p)) {
+      const content = fs.readFileSync(p, "utf8");
+      for (const line of content.split("\n")) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith("#")) {
+          const idx = trimmed.indexOf("=");
+          if (idx > 0) {
+            const key = trimmed.substring(0, idx).trim();
+            let val = trimmed.substring(idx + 1).trim();
+            // Remove comments from the end of the line if any
+            const hashIdx = val.indexOf("#");
+            if (hashIdx >= 0) {
+              val = val.substring(0, hashIdx).trim();
+            }
+            val = val.replace(/^['"]|['"]$/g, ""); // strip quotes
+            if (!process.env[key]) {
+              process.env[key] = val;
+            }
+          }
+        }
+      }
+      break;
+    }
+    const parent = path.dirname(currentDir);
+    if (parent === currentDir) break;
+    currentDir = parent;
+  }
+}
+loadEnv();
 
 const [, , command, ...args] = process.argv;
 
@@ -37,9 +75,11 @@ async function main(): Promise<void> {
           console.log(JSON.stringify(result, null, 2));
           break;
         }
-        case "gmada":
-          console.log(JSON.stringify({ status: "skipped", reason: "GMADA scraper not yet implemented (M2 recommendation B)" }, null, 2));
+        case "gmada": {
+          const result = await scrapeGmada({ dryRun: true, tenantId: getArg("tenant"), file: getArg("file") });
+          console.log(JSON.stringify(result, null, 2));
           break;
+        }
         default:
           console.log(JSON.stringify({ status: "error", reason: `Unknown portal: ${portal}` }));
           process.exit(1);
@@ -52,6 +92,11 @@ async function main(): Promise<void> {
       switch (portal) {
         case "psrera": {
           const result = await scrapePsrera({ tenantId: getArg("tenant") });
+          console.log(JSON.stringify(result, null, 2));
+          process.exit(result.errors.length > 0 ? 1 : 0);
+        }
+        case "gmada": {
+          const result = await scrapeGmada({ tenantId: getArg("tenant"), file: getArg("file") });
           console.log(JSON.stringify(result, null, 2));
           process.exit(result.errors.length > 0 ? 1 : 0);
         }

@@ -3,6 +3,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { resolveTenant } from "@/lib/tenant";
 import "./globals.css";
+import "./tenant-theme.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await resolveTenant();
@@ -21,7 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const tenant = await resolveTenant();
 
   return (
-    <html lang="en">
+    <html lang="en" className={`tenant-${tenant.slug}`}>
       <body className="flex min-h-screen flex-col">
         <SiteHeader tenant={tenant} />
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>

@@ -2,6 +2,9 @@ import { downloadPdf, parsePdf, type ParserProjectRecord } from "./psrera/index.
 import { writeManyStaging, resolveTenantId, type StagingProjectInsert } from "./staging.js";
 import { SCRAPER_CONFIG } from "./config.js";
 import { isOffPeakHour } from "./config.js";
+import { scrapeGmada } from "./gmada/manual.js";
+
+export { scrapeGmada };
 
 export interface ScrapeResult {
   portal: string;

@@ -10,7 +10,8 @@
     "pipeline:inspect": "pnpm --filter @tricity/pipeline inspect",
     "pipeline:dry-run": "pnpm --filter @tricity/pipeline dry-run",
     "pipeline:scrape": "pnpm --filter @tricity/pipeline scrape",
-    "pipeline:promote": "pnpm --filter @tricity/pipeline promote"
+    "pipeline:promote": "pnpm --filter @tricity/pipeline promote",
+    "demo": "node scripts/run-demo.mjs"
   },
   "engines": {
     "node": ">=20"
