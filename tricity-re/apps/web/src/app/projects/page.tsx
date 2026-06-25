@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { SiteFooter } from "@/components/SiteFooter";
 import { EmptyState } from "@/components/EmptyState";
 import { fetchProjects } from "@/lib/data";
 import { resolveTenant } from "@/lib/tenant";
+import { RERA_DATA_DISCLAIMER } from "@tricity/core";
 
 export const revalidate = 3600;
 
@@ -37,8 +37,8 @@ export default async function ProjectsPage() {
         )}
       </div>
 
-      <div className="mt-8">
-        <SiteFooter showReraDisclaimer />
+      <div className="mt-8 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+        {RERA_DATA_DISCLAIMER}
       </div>
     </>
   );

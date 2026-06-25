@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { PriceDisplay } from "@/components/PriceDisplay";
 import { LeadForm } from "@/components/LeadForm";
-import { SiteFooter } from "@/components/SiteFooter";
 import { fetchProjectBySlug, fetchProjects } from "@/lib/data";
 import { getSiteUrl, resolveTenant } from "@/lib/tenant";
+import { RERA_DATA_DISCLAIMER } from "@tricity/core";
 
 export const revalidate = 3600;
 
@@ -74,8 +74,8 @@ export default async function ProjectDetailPage({
         </section>
       </article>
 
-      <div className="mt-8">
-        <SiteFooter showReraDisclaimer />
+      <div className="mt-8 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+        {RERA_DATA_DISCLAIMER}
       </div>
     </>
   );

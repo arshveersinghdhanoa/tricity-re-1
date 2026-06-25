@@ -11,6 +11,7 @@
     "pipeline:dry-run": "pnpm --filter @tricity/pipeline dry-run",
     "pipeline:scrape": "pnpm --filter @tricity/pipeline scrape",
     "pipeline:promote": "pnpm --filter @tricity/pipeline promote",
+    "pipeline:import-prices": "pnpm --filter @tricity/pipeline import-prices",
     "demo": "node scripts/run-demo.mjs"
   },
   "engines": {

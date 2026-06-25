@@ -2,6 +2,7 @@
 import { inspectAll, inspectPortal } from "./inspect.js";
 import { scrapePsrera, scrapeGmada } from "./scrape.js";
 import { promoteProjects } from "./promote.js";
+import { importPrices } from "./prices.js";
 import type { PortalId } from "./config.js";
 import { PORTALS } from "./config.js";
 
@@ -114,8 +115,16 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "import-prices": {
+      const filePath = getArg("file") ?? "data/prices.json";
+      const result = await importPrices(filePath);
+      console.log(JSON.stringify(result, null, 2));
+      process.exit(result.imported === 0 && result.errors.length > 0 ? 1 : 0);
+      break;
+    }
+
     default:
-      console.log(`Usage: tricity-pipeline <inspect|dry-run|scrape|promote> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N]`);
+      console.log(`Usage: tricity-pipeline <inspect|dry-run|scrape|promote|import-prices> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N] [--file=path/to/json]`);
       process.exit(command ? 1 : 0);
   }
 }

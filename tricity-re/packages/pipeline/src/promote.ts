@@ -35,6 +35,12 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
 
   for (const row of rows) {
     try {
+      // Prevent fabricated project numbers from entering production (Non-negotiable #2)
+      if (!/^PBRERA-/.test(row.rera_number)) {
+        errors.push(`Refusing non-PSRERA rera_number: ${row.rera_number}`);
+        continue;
+      }
+
       const existing = await supabase
         .from("projects")
         .select("id")

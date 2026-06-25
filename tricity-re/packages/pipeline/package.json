@@ -12,7 +12,8 @@
     "inspect": "node dist/cli.js inspect",
     "dry-run": "node dist/cli.js dry-run",
     "scrape": "node dist/cli.js scrape",
-    "promote": "node dist/cli.js promote"
+    "promote": "node dist/cli.js promote",
+    "import-prices": "node dist/cli.js import-prices"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",
