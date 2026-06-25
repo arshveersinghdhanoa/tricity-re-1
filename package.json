@@ -12,6 +12,7 @@
     "pipeline:scrape": "pnpm --filter @tricity/pipeline scrape",
     "pipeline:promote": "pnpm --filter @tricity/pipeline promote",
     "pipeline:import-prices": "pnpm --filter @tricity/pipeline import-prices",
+    "pipeline:stage-prices": "pnpm --filter @tricity/pipeline stage-prices",
     "demo": "node scripts/run-demo.mjs"
   },
   "engines": {
