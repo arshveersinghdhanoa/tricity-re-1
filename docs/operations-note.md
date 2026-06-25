@@ -60,13 +60,12 @@ When a lead’s score ≥ 60, the API (`/api/leads`) sends an email via **Node
 3. **Create content folder**:
    - `apps/web/src/content/<slug>/` and add markdown files for each guide.
    - The page components automatically load content based on `tenant.slug`.
-4. **Update Vercel rewrites**:
-   - Edit `apps/web/vercel.json` and add a rewrite entry for the new domain:
-     ```json
-     { "source": "<newdomain>/*", "destination": "/" }
-     ```
-5. **Deploy**:
-   - Push the changes, Vercel will build and the new tenant will be reachable at its hostname.
+4. **Map Domain in Vercel Dashboard**:
+   - Go to your Vercel Project dashboard → **Settings → Domains**.
+   - Add the new tenant domain (e.g. `nayagaon.in` or `ajitgarh.in`).
+5. **Point DNS CNAME**:
+   - In your domain registrar settings, point the domain's CNAME record to `cname.vercel-dns.com` (or A record to Vercel IP).
+   - Once DNS propagates, Vercel routes requests to the Next.js app. The app resolves the tenant dynamically via request headers.
 6. **Verify**:
    - Browse the new domain, check that the branding, guides, and metadata reflect the new tenant.
    - Run `pnpm test` – the tenant tests will confirm uniqueness.

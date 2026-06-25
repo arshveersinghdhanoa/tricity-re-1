@@ -4,6 +4,9 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+      },
       colors: {
         brand: {
           50: "#f0f7f4",
@@ -20,3 +23,4 @@ const config: Config = {
 };
 
 export default config;
+
