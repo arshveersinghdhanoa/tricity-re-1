@@ -1,29 +1,13 @@
-name: Data Pipeline — Daily Scrape & Promote
+name: Data Pipeline — Legacy (disabled)
+
+# This workflow has been superseded by pipeline.yml
+# Kept for reference only — disabled via the 'on' trigger
 
 on:
-  workflow_dispatch:  # allows manual runs
-  schedule:
-    - cron: '0 0 * * *'  # runs daily at midnight
+  workflow_dispatch: # manual-only, no automatic runs
 
 jobs:
-  build:
+  placeholder:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: false
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Run data pipeline
-        run: echo "Running daily scrape and promote..."
-
-      - name: Trigger site revalidation
-        run: |
-          curl -X POST "https://<your-domain>/api/revalidate?secret=${{ secrets.REVALIDATE_SECRET }}"
-
+      - run: echo "This workflow is disabled. Use the 'Data Pipeline — Daily Scrape & Promote' workflow instead."
