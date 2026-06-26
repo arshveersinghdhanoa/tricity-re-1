@@ -10,5 +10,7 @@ dist/
 .DS_Store
 coverage/
 supabase/.temp/
-
 .vercel
+
+tmp/
+_check_work/

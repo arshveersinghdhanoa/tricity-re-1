@@ -76,9 +76,10 @@ Then set all env vars matching `.env.example` with real values.
 - [ ] Client can log into Supabase dashboard
 - [ ] Client can log into Vercel dashboard
 - [ ] Client can push to GitHub repository
-- [ ] Service role key rotated and old key invalidated
+- [x] Service role key rotated and old key invalidated (Completed on 2026-06-25)
 - [ ] All env vars set in Vercel for `tricity-re` project
-- [ ] All secrets set in GitHub Actions
+- [x] All secrets set in GitHub Actions (Completed on 2026-06-25)
 - [ ] Client can access domain DNS settings
 - [ ] SMTP credentials provided and configured
 - [ ] Real WhatsApp number and contact email configured
+
