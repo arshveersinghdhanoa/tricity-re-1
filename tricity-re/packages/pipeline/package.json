@@ -14,7 +14,8 @@
     "scrape": "node dist/cli.js scrape",
     "promote": "node dist/cli.js promote",
     "import-prices": "node dist/cli.js import-prices",
-    "stage-prices": "node dist/cli.js stage-prices"
+    "stage-prices": "node dist/cli.js stage-prices",
+    "seed-demo-prices": "node dist/cli.js seed-demo-prices"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",
