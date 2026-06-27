@@ -8,23 +8,31 @@ export default async function GuidesPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Buyer guides</h1>
-      <p className="mt-2 text-stone-600">
-        Editorial content unique to {tenant.name}. Placeholder shells until Client supplies final copy.
-      </p>
+      <div className="border-b border-stone-200 pb-6">
+        <h1 className="text-3xl font-extrabold tracking-tight text-brand-900">Buyer guides</h1>
+        <p className="mt-2 text-lg text-stone-600">
+          Editorial content unique to {tenant.name}. Placeholder shells until Client supplies final copy.
+        </p>
+      </div>
 
-      <ul className="mt-8 space-y-4">
+      <ul className="mt-8 grid gap-6 sm:grid-cols-2">
         {tenant.guides.map((g) => (
-          <li key={g.slug} className="rounded-lg border border-stone-200 bg-white p-5">
-            <Link href={`/guides/${g.slug}`} className="text-lg font-medium no-underline">
-              {g.title}
+          <li key={g.slug}>
+            <Link href={`/guides/${g.slug}`} className="block rounded-xl border border-stone-200 bg-white p-5 no-underline transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-md h-full">
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="text-lg font-semibold text-stone-900 hover:text-brand-600 transition-colors">
+                  {g.title}
+                </h2>
+                {g.isPlaceholder && (
+                  <span className="shrink-0 rounded bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                    Placeholder
+                  </span>
+                )}
+              </div>
+              <p className="mt-2.5 text-sm text-stone-500 line-clamp-3">
+                {g.summary}
+              </p>
             </Link>
-            <p className="mt-1 text-sm text-stone-600">{g.summary}</p>
-            {g.isPlaceholder && (
-              <span className="mt-2 inline-block rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">
-                Placeholder — awaiting Client editorial
-              </span>
-            )}
           </li>
         ))}
       </ul>

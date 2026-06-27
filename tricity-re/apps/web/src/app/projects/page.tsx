@@ -12,10 +12,12 @@ export default async function ProjectsPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Projects</h1>
-      <p className="mt-2 text-stone-600">
-        RERA-registered projects with verified or indicative pricing as labelled on each record.
-      </p>
+      <div className="border-b border-stone-200 pb-6">
+        <h1 className="text-3xl font-extrabold tracking-tight text-brand-900">Projects</h1>
+        <p className="mt-2 text-lg text-stone-600">
+          RERA-registered projects with verified or indicative pricing as labelled on each record.
+        </p>
+      </div>
 
       <div className="mt-8">
         {projects.length === 0 ? (
@@ -24,20 +26,31 @@ export default async function ProjectsPage() {
             description="We do not populate the site with unverified data. Projects appear here after validated promotion from the data pipeline."
           />
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid gap-6 sm:grid-cols-2">
             {projects.map((p) => (
-              <li key={p.id} className="rounded-lg border border-stone-200 bg-white p-4">
-                <Link href={`/projects/${p.slug}`} className="text-lg font-medium no-underline">
-                  {p.name}
+              <li key={p.id} className="group relative rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-md">
+                <Link href={`/projects/${p.slug}`} className="block no-underline">
+                  <h2 className="text-lg font-bold text-stone-900 group-hover:text-brand-600 transition-colors">
+                    {p.name}
+                  </h2>
+                  <div className="mt-3 flex items-center justify-between text-xs font-medium text-stone-500">
+                    <span className="rounded bg-stone-100 px-2.5 py-1 font-mono tracking-wider">
+                      RERA: {p.rera_number}
+                    </span>
+                    {p.status && (
+                      <span className="rounded bg-brand-50 text-brand-700 px-2 py-0.5 capitalize">
+                        {p.status}
+                      </span>
+                    )}
+                  </div>
                 </Link>
-                <p className="text-sm text-stone-600">RERA: {p.rera_number} · {p.status}</p>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      <div className="mt-8 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+      <div className="mt-12 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 font-medium">
         {RERA_DATA_DISCLAIMER}
       </div>
     </>

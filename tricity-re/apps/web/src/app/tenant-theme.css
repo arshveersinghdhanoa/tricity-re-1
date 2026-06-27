@@ -1,19 +1,54 @@
 /* apps/web/src/app/tenant-theme.css */
 :root {
-  --primary-color: #3498db; /* default fallback */
-  --background-color: #ffffff;
-  --text-color: #212529;
+  /* Fallback (New Chandigarh Indigo palette) */
+  --brand-50: #f8fafc;
+  --brand-100: #f1f5f9;
+  --brand-200: #e2e8f0;
+  --brand-300: #cbd5e1;
+  --brand-400: #94a3b8;
+  --brand-500: #64748b;
+  --brand-600: #475569;
+  --brand-700: #334155;
+  --brand-900: #0f172a;
 }
 
 /* Tenant-specific overrides */
+
+/* New Chandigarh: Vibrant Blue/Indigo Technology Theme */
 .tenant-newchandigarh {
-  --primary-color: #0066ff; /* blue */
+  --brand-50: #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-900: #1e3a8a;
 }
 
+/* Nayagaon: Sophisticated Amber/Copper/Warm Theme */
 .tenant-nayagaon {
-  --primary-color: #ff6600; /* orange */
+  --brand-50: #fff7ed;
+  --brand-100: #ffedd5;
+  --brand-200: #fed7aa;
+  --brand-300: #fdba74;
+  --brand-400: #fb923c;
+  --brand-500: #f97316;
+  --brand-600: #ea580c;
+  --brand-700: #c2410c;
+  --brand-900: #7c2d12;
 }
 
+/* Ajitgarh: Lush Green/Teal Natural Theme */
 .tenant-ajitgarh {
-  --primary-color: #28a745; /* green */
+  --brand-50: #f0fdf4;
+  --brand-100: #dcfce7;
+  --brand-200: #bbf7d0;
+  --brand-300: #86efac;
+  --brand-400: #4ade80;
+  --brand-500: #10b981;
+  --brand-600: #059669;
+  --brand-700: #047857;
+  --brand-900: #064e3b;
 }
