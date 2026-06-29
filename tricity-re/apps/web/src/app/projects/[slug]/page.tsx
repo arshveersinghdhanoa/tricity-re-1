@@ -50,7 +50,10 @@ export default async function ProjectDetailPage({
         </Link>
       </nav>
 
-      <article className="rounded-2xl border border-stone-200 bg-white p-6 md:p-8 shadow-sm">
+      <article className="page-header overflow-hidden rounded-2xl border border-brand-200/40 shadow-md">
+        <div className="page-header-inner relative p-6 md:p-8">
+          <div className="page-header-grid absolute inset-0 opacity-[0.3]" aria-hidden />
+          <div className="relative z-10">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-stone-900">{project.name}</h1>
@@ -128,6 +131,8 @@ export default async function ProjectDetailPage({
             <LeadForm projectSlug={project.slug} />
           </div>
         </section>
+          </div>
+        </div>
       </article>
 
       <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 text-sm text-amber-950">

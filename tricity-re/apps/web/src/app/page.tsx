@@ -76,32 +76,33 @@ export default async function HomePage() {
       <JsonLd data={orgJsonLd} />
       <JsonLd data={faqJsonLd} />
 
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-50/80 via-white to-stone-50 p-8 md:p-10 shadow-md border border-brand-100/60">
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.06] pointer-events-none" />
-        <div className="absolute top-0 right-0 h-48 w-48 translate-x-12 -translate-y-12 rounded-full bg-brand-200/40 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 space-y-4">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-900 border border-brand-200/50">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse" />
-            Independent property intelligence
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-brand-900 sm:text-5xl">
-            {tenant.name}
-          </h1>
-          <p className="max-w-2xl text-lg text-stone-600 leading-relaxed">{tenant.homeIntro}</p>
-          <div className="flex flex-wrap gap-3 pt-2">
-            <Link
-              href="/projects"
-              className="inline-flex rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white no-underline hover:bg-brand-700 shadow-sm"
-            >
-              Browse projects
-            </Link>
-            <Link
-              href="/platform"
-              className="inline-flex rounded-xl border border-stone-200 bg-white px-5 py-2.5 text-sm font-bold text-stone-700 no-underline hover:bg-stone-50"
-            >
-              How we&apos;re different
-            </Link>
+      <section className="page-header overflow-hidden rounded-2xl border border-brand-200/40 shadow-md">
+        <div className="page-header-inner relative p-8 md:p-10">
+          <div className="page-header-grid absolute inset-0 opacity-[0.35]" aria-hidden />
+          <div className="page-header-glow absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-300/30 blur-3xl" aria-hidden />
+          <div className="relative z-10 space-y-4">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-200/60 bg-white/70 px-3 py-1 text-xs font-semibold text-brand-900 backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse" />
+              Independent property intelligence
+            </div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-brand-900 sm:text-5xl">
+              {tenant.name}
+            </h1>
+            <p className="max-w-2xl text-lg text-stone-600 leading-relaxed">{tenant.homeIntro}</p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Link
+                href="/projects"
+                className="inline-flex rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white no-underline hover:bg-brand-700 shadow-sm"
+              >
+                Browse projects
+              </Link>
+              <Link
+                href="/platform"
+                className="inline-flex rounded-xl border border-brand-200/60 bg-white/80 px-5 py-2.5 text-sm font-bold text-stone-700 no-underline hover:bg-white backdrop-blur-sm"
+              >
+                How we&apos;re different
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -114,7 +115,7 @@ export default async function HomePage() {
             <Link
               key={item.href}
               href={item.href}
-              className="block rounded-xl border border-stone-200 bg-white p-4 no-underline transition-all hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+              className="block rounded-xl border border-stone-200/80 bg-white/80 p-4 no-underline shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
             >
               <span className="text-2xl" aria-hidden>
                 {item.icon}
@@ -157,7 +158,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="mt-12 rounded-2xl border border-brand-100 bg-brand-50/30 p-6">
+      <section className="mt-12 rounded-2xl border border-brand-200/50 bg-gradient-to-br from-brand-50/80 via-white/60 to-brand-100/30 p-6 shadow-sm backdrop-blur-sm">
         <h2 className="text-xl font-bold text-brand-900">Why buyers use this over listing portals</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3 text-sm">
           <div>

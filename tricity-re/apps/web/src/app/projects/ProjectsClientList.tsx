@@ -139,7 +139,7 @@ export function ProjectsClientList({ initialProjects, reraDisclaimer }: Projects
   return (
     <div className="space-y-6">
       {/* Search */}
-      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-stone-200/80 bg-white/75 p-5 shadow-sm backdrop-blur-sm space-y-4">
         <div className="relative">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-stone-400">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>

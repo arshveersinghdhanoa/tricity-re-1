@@ -17,6 +17,7 @@ const config: Config = {
           500: "var(--brand-500)",
           600: "var(--brand-600)",
           700: "var(--brand-700)",
+          800: "var(--brand-800)",
           900: "var(--brand-900)",
         },
       },
