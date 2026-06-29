@@ -1,8 +1,10 @@
-import Link from "next/link";
-import { EmptyState } from "@/components/EmptyState";
+import { Suspense } from "react";
 import { fetchProjects } from "@/lib/data";
 import { resolveTenant } from "@/lib/tenant";
 import { RERA_DATA_DISCLAIMER } from "@tricity/core";
+import { PageHeader } from "@/components/PageHeader";
+import { ProjectsClientList } from "./ProjectsClientList";
+import Link from "next/link";
 
 export const revalidate = 3600;
 
@@ -12,34 +14,29 @@ export default async function ProjectsPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Projects</h1>
-      <p className="mt-2 text-stone-600">
-        RERA-registered projects with verified or indicative pricing as labelled on each record.
-      </p>
+      <PageHeader
+        badge="RERA registry · production data"
+        title="RERA-tracked projects"
+        description="Search by name, RERA ID, or district. Filter residential, commercial, mixed use, and more — only genuinely promoted records appear here."
+        meta={
+          <>
+            {projects.length} project{projects.length !== 1 ? "s" : ""} in production ·{" "}
+            <span className="font-medium text-emerald-700">Verified prices labelled on each card</span>
+          </>
+        }
+        actions={
+          <Link
+            href="/platform"
+            className="inline-flex text-sm font-semibold text-brand-700 no-underline hover:text-brand-900 bg-white/80 px-4 py-2.5 rounded-xl border border-brand-200/60 shadow-sm backdrop-blur-sm"
+          >
+            How this works →
+          </Link>
+        }
+      />
 
-      <div className="mt-8">
-        {projects.length === 0 ? (
-          <EmptyState
-            title="No projects in production"
-            description="We do not populate the site with unverified data. Projects appear here after validated promotion from the data pipeline."
-          />
-        ) : (
-          <ul className="space-y-3">
-            {projects.map((p) => (
-              <li key={p.id} className="rounded-lg border border-stone-200 bg-white p-4">
-                <Link href={`/projects/${p.slug}`} className="text-lg font-medium no-underline">
-                  {p.name}
-                </Link>
-                <p className="text-sm text-stone-600">RERA: {p.rera_number} · {p.status}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="mt-8 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-        {RERA_DATA_DISCLAIMER}
-      </div>
+      <Suspense fallback={<p className="text-stone-500">Loading projects…</p>}>
+        <ProjectsClientList initialProjects={projects} reraDisclaimer={RERA_DATA_DISCLAIMER} />
+      </Suspense>
     </>
   );
 }

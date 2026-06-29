@@ -101,14 +101,31 @@ RERA numbers may split across two rows (e.g., `"PBRERA-KPT40-"` at higher y, `"P
 - The next row's RERA field is prepended with the stored prefix.
 - If the format changes (no longer uses hyphen-split fragments), modify `reraAccumulator` logic accordingly.
 
-## GMADA HTML/PDF Scraper (future)
+## GMADA HTML/PDF Scraper
 
-The GMADA approach uses a different strategy (Drupal pages + master-plan PDFs). When implemented, this section should document:
+The GMADA scraper uses a dual-strategy (live scraping of Drupal tables with a local JSON fallback in case of connection timeouts or network blocks).
 
-1. CSS selectors for Drupal page elements
-2. URL structure patterns
-3. PDF parsing approach for master-plan documents
-4. Expected data formats
+### 1. Live Drupal Page Selectors
+*   **Target URL**: `https://gmada.gov.in/en/approved-colonies`
+*   **Container Selector**: `table tbody tr` or `.view-content table tbody tr`
+*   **Field Mapping (0-indexed Column TDs)**:
+    - `td[1]`: Colony/Project Name
+    - `td[2]`: Promoter Name
+    - `td[3]`: Location/District (e.g., "New Chandigarh")
+    - `td[4]`: Colony Type (e.g., "Residential Plotted", "Commercial")
+*   **RERA Format Generation**: Since GMADA projects lack standardized RERA numbers, the scraper generates a deterministic identifier `GMADA-L-[Hash]` matching the constraint format `GMADA-[A-Z]-\d{4}`.
+
+### 2. GMADA IPMS Portal ToS & Security Review (`gmadaipms.in`)
+*   **ToS Verdict**: **Permissible**. There are no dedicated terms of service pages or `robots.txt` rules blocking automated retrieval. 
+*   **Important Disclaimer**: The portal carries a notice stating that the data is provided solely for owner convenience and official offline office records supersede online records.
+*   **Operational Note**: The portal lists financial ledger data and vacant inventories. Because it is an ASP.NET application with potential session controls, web scraping this portal must be done with low rate limits and polite intervals.
+
+### 3. Master Plan PDF Parsers (New Chandigarh, Kharar, Zirakpur)
+*   **Index Page**: `https://gmada.gov.in/en/master-plans`
+*   **Zoning and Land Use**: The PDF documents are non-tabular narrative reports. To parse planning/zoning details automatically:
+    - Download layout PDFs (such as the Approved Colonies NOC list).
+    - Parse using positional coordinate extraction (e.g., matching text rows grouping coordinate range intervals similar to PSRERA's `pdfjs-dist` strategy).
+
 
 ## General Drift Monitoring
 

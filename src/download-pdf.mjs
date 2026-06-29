@@ -4,7 +4,7 @@ import fs from "fs";
 const url = "https://rera.punjab.gov.in/pdf/registered-projects/List_of_Registered_Projects.pdf";
 const file = fs.createWriteStream("tmp/registered-projects.pdf");
 
-https.get(url, { headers: { "User-Agent": "Mozilla/5.0" } }, (response) => {
+https.get(url, { headers: { "User-Agent": "TricityRE-Bot/1.0 (+https://newchandigarh.in; data-pipeline)" } }, (response) => {
   let len = 0;
   response.on("data", (chunk) => {
     len += chunk.length;

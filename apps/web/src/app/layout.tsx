@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { SiteBackground } from "@/components/SiteBackground";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { resolveTenant } from "@/lib/tenant";
@@ -36,10 +37,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={`${inter.variable} tenant-${tenant.slug}`}>
-      <body className="flex min-h-screen flex-col font-sans">
-        <SiteHeader tenant={tenant} />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
-        <SiteFooter />
+      <body className="relative flex min-h-screen flex-col font-sans text-stone-900 antialiased overflow-x-hidden">
+        <SiteBackground />
+
+        <div className="relative z-10 flex flex-col min-h-screen">
+          <SiteHeader tenant={tenant} />
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+          <SiteFooter />
+        </div>
       </body>
     </html>
   );

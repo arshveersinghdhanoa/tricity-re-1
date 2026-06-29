@@ -89,7 +89,7 @@ export async function inspectPortal(portal: PortalId): Promise<InspectResult> {
     config: SCRAPER_CONFIG,
     note: [
       `robots.txt: ${robotsStatus}.`,
-      "Milestone 2 review is complete and approved.",
+      "See docs/milestone-2-report.md for full ToS/robots review.",
       "Scrapers must write to staging tables only (Non-negotiable #4).",
     ].join(" "),
   };

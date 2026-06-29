@@ -1,18 +1,71 @@
 import fs from "fs";
 import path from "path";
+import { createHash } from "crypto";
 import { resolveTenantId, writeManyStaging, type StagingProjectInsert } from "../staging.js";
 import { isOffPeakHour } from "../config.js";
 
 export interface ManualProjectRecord {
-  reraNumber: string;
+  /** Official document URL, PDF page reference, or GMADA publication ID — required. */
+  sourceReference: string;
   projectName: string;
   typeOfProject?: string;
   promoterName?: string;
   location?: string;
   address?: string;
   contact?: string;
+  /** Optional. Only ^PBRERA-… numbers can be promoted to production projects. */
+  pbreraNumber?: string;
 }
 
+/** @deprecated Legacy field — rejected on import. Use sourceReference + pbreraNumber instead. */
+type LegacyRecord = ManualProjectRecord & { reraNumber?: string };
+
+const FABRICATED_RERA = /^GMADA-[A-Z]-\d{4}$/;
+
+function stagingKey(sourceReference: string): string {
+  const hash = createHash("sha256").update(sourceReference.trim()).digest("hex").slice(0, 16);
+  return `GMADA-SRC-${hash}`;
+}
+
+function normalizeRecord(raw: LegacyRecord): { record: ManualProjectRecord | null; error?: string } {
+  if (raw.reraNumber && FABRICATED_RERA.test(raw.reraNumber)) {
+    return {
+      record: null,
+      error: `Rejected fabricated identifier ${raw.reraNumber}. Use sourceReference and optional pbreraNumber (^PBRERA-…).`,
+    };
+  }
+
+  const sourceReference = raw.sourceReference?.trim();
+  if (!sourceReference || sourceReference.length < 8) {
+    return { record: null, error: "Missing sourceReference (official document URL or citation, min 8 chars)." };
+  }
+
+  const projectName = raw.projectName?.trim();
+  if (!projectName || projectName.length < 2) {
+    return { record: null, error: "Missing or too-short projectName." };
+  }
+
+  return {
+    record: {
+      sourceReference,
+      projectName,
+      typeOfProject: raw.typeOfProject,
+      promoterName: raw.promoterName,
+      location: raw.location,
+      address: raw.address,
+      contact: raw.contact,
+      pbreraNumber: raw.pbreraNumber?.trim(),
+    },
+  };
+}
+
+/**
+ * GMADA data import — Client-supplied verified records only.
+ *
+ * Automated live scraping is NOT implemented (M2 recommendation B: PDF/manual workflow).
+ * Non-negotiable #2: no fabricated RERA numbers or sample colonies.
+ * Non-negotiable #4: writes to staging only.
+ */
 export async function scrapeGmada(options: { dryRun?: boolean; tenantId?: string; file?: string } = {}) {
   const dryRun = options.dryRun ?? false;
   const tenantSlug = options.tenantId ?? process.env.NEXT_PUBLIC_DEFAULT_TENANT ?? "newchandigarh";
@@ -32,95 +85,83 @@ export async function scrapeGmada(options: { dryRun?: boolean; tenantId?: string
     };
   }
 
-  // Determine JSON file path
-  // Default to tricity-re/data/manual/gmada.json
   const defaultPath = path.resolve(process.cwd(), "data/manual/gmada.json");
   const filePath = options.file ? path.resolve(process.cwd(), options.file) : defaultPath;
 
-  console.log(`[gmada] Assisted Manual Fallback — reading file: ${filePath}`);
-
   if (!fs.existsSync(filePath)) {
-    // Write a helpful sample file if default path doesn't exist
-    if (!options.file) {
-      try {
-        fs.mkdirSync(path.dirname(defaultPath), { recursive: true });
-        const sample: ManualProjectRecord[] = [
-          {
-            reraNumber: "GMADA-M-0001",
-            projectName: "GMADA Eco City I",
-            typeOfProject: "Residential Plotted",
-            promoterName: "GMADA",
-            location: "New Chandigarh",
-            address: "Mullanpur, New Chandigarh",
-          },
-          {
-            reraNumber: "GMADA-M-0002",
-            projectName: "GMADA IT City",
-            typeOfProject: "Mixed Use",
-            promoterName: "GMADA",
-            location: "SAS Nagar",
-            address: "Sector 66-B, Mohali",
-          }
-        ];
-        fs.writeFileSync(defaultPath, JSON.stringify(sample, null, 2), "utf-8");
-        console.log(`[gmada] Created template manual file at ${defaultPath}`);
-      } catch (err) {
-        errors.push(`Failed to create sample file: ${err instanceof Error ? err.message : String(err)}`);
-      }
-    }
-
-    if (!fs.existsSync(filePath)) {
-      return {
-        portal: "gmada",
-        recordsFound: 0,
-        recordsValid: 0,
-        recordsWritten: 0,
-        errors: [`Manual file not found at ${filePath}. Please populate the file to run the fallback importer.`, ...errors],
-        dryRun,
-        offPeak,
-      };
-    }
+    return {
+      portal: "gmada",
+      recordsFound: 0,
+      recordsValid: 0,
+      recordsWritten: 0,
+      errors: [
+        `GMADA import file not found: ${filePath}`,
+        "Populate with Client-verified records (see data/manual/README.md). Live GMADA scraping is deferred per docs/milestone-2-report.md.",
+      ],
+      dryRun,
+      offPeak,
+    };
   }
 
-  let records: ManualProjectRecord[] = [];
+  let rawRecords: LegacyRecord[];
   try {
-    const raw = fs.readFileSync(filePath, "utf-8");
-    records = JSON.parse(raw);
-    if (!Array.isArray(records)) {
-      throw new Error("JSON root must be an array of records");
-    }
+    rawRecords = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    if (!Array.isArray(rawRecords)) throw new Error("JSON root must be an array");
   } catch (err) {
     return {
       portal: "gmada",
       recordsFound: 0,
       recordsValid: 0,
       recordsWritten: 0,
-      errors: [`Failed to parse manual JSON file: ${err instanceof Error ? err.message : String(err)}`],
+      errors: [`Failed to parse GMADA import file: ${err instanceof Error ? err.message : String(err)}`],
       dryRun,
       offPeak,
     };
   }
 
-  console.log(`[gmada] Found ${records.length} records in manual file.`);
+  if (rawRecords.length === 0) {
+    return {
+      portal: "gmada",
+      recordsFound: 0,
+      recordsValid: 0,
+      recordsWritten: 0,
+      errors: ["GMADA import file is empty. Add Client-verified records before running import."],
+      dryRun,
+      offPeak,
+    };
+  }
+
+  const records: ManualProjectRecord[] = [];
+  for (const raw of rawRecords) {
+    const { record, error } = normalizeRecord(raw);
+    if (error) errors.push(error);
+    else if (record) records.push(record);
+  }
 
   const stagingRecords: StagingProjectInsert[] = records.map((r) => {
     const tid = tenantId ?? "00000000-0000-0000-0000-000000000000";
     const validationErrors: string[] = [];
 
-    if (!r.reraNumber || r.reraNumber.trim().length < 3) {
-      validationErrors.push("Missing or invalid RERA/Manual identifier");
+    const reraForStaging =
+      r.pbreraNumber && /^PBRERA-/.test(r.pbreraNumber) ? r.pbreraNumber : stagingKey(r.sourceReference);
+
+    if (r.pbreraNumber && !/^PBRERA-/.test(r.pbreraNumber)) {
+      validationErrors.push(`pbreraNumber must match ^PBRERA-… (got ${r.pbreraNumber})`);
     }
-    if (!r.projectName || r.projectName.trim().length < 2) {
-      validationErrors.push("Missing or too-short project name");
+
+    if (!r.pbreraNumber) {
+      validationErrors.push(
+        "No PBRERA number — staging only; will not promote to production until Client links a verified PBRERA ID.",
+      );
     }
 
     return {
       tenant_id: tid,
-      rera_number: r.reraNumber || `GEN-${Math.random().toString(36).substr(2, 9)}`,
+      rera_number: reraForStaging,
       raw_payload: r as unknown as Record<string, unknown>,
-      parsed_name: r.projectName || null,
+      parsed_name: r.projectName,
       parsed_status: r.typeOfProject || null,
-      validation_status: validationErrors.length === 0 ? "valid" : "invalid",
+      validation_status: validationErrors.some((e) => e.includes("must match")) ? "invalid" : "valid",
       validation_errors: validationErrors.length > 0 ? validationErrors : null,
       source_portal: "gmada",
     };
@@ -128,8 +169,12 @@ export async function scrapeGmada(options: { dryRun?: boolean; tenantId?: string
 
   const validRecords = stagingRecords.filter((r) => r.validation_status === "valid");
 
+  console.log(
+    `[gmada] Client import: ${records.length} record(s) parsed, ${validRecords.length} valid for staging (${errors.length} rejected).`,
+  );
+
   if (dryRun) {
-    console.log(`[gmada] DRY RUN — would write ${validRecords.length} valid records to staging`);
+    console.log(`[gmada] DRY RUN — would write ${validRecords.length} record(s) to staging`);
     return {
       portal: "gmada",
       recordsFound: records.length,
@@ -141,11 +186,8 @@ export async function scrapeGmada(options: { dryRun?: boolean; tenantId?: string
     };
   }
 
-  console.log(`[gmada] Writing ${validRecords.length} valid records to staging...`);
   const writeResult = await writeManyStaging(validRecords);
   errors.push(...writeResult.errors.map((e) => `Write: ${e}`));
-
-  console.log(`[gmada] Wrote ${writeResult.inserted} records (${errors.length} errors)`);
 
   return {
     portal: "gmada",

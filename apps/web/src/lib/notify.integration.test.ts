@@ -37,5 +37,5 @@ describe("hot-lead notification integration", () => {
       // Restore environment variables
       process.env = oldEnv;
     }
-  }, 20000); // 20s timeout for network requests
+  }, 40000); // 40s timeout for network requests
 });

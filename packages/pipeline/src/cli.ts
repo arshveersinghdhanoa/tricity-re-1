@@ -136,8 +136,11 @@ async function main(): Promise<void> {
     }
 
     default:
-      console.log(`Usage: tricity-pipeline <inspect|dry-run|scrape|promote|import-prices|stage-prices> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N] [--file=path/to/json] [--dry-run]`);
+      console.log(
+        `Usage: tricity-pipeline <inspect|dry-run|scrape|promote|import-prices|stage-prices> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N] [--file=path/to/json] [--dry-run]`,
+      );
       process.exit(command ? 1 : 0);
+      break;
   }
 }
 
