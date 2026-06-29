@@ -45,7 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         <div className="relative z-10 flex flex-col min-h-screen">
           <SiteHeader tenant={tenant} />
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
           <SiteFooter />
         </div>
       </body>

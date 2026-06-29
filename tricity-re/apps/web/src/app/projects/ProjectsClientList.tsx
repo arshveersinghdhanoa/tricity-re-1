@@ -1,169 +1,239 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Link from "next/link";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ProjectRow } from "@/lib/data";
+import { ProjectCard } from "@/components/ProjectCard";
+import {
+  categorizePropertyType,
+  matchesPropertyCategory,
+  parseProjectMeta,
+  PROPERTY_TYPE_LABELS,
+  type PropertyTypeCategory,
+} from "@tricity/core";
 
 interface ProjectsClientListProps {
   initialProjects: ProjectRow[];
   reraDisclaimer: string;
 }
 
-export function ProjectsClientList({ initialProjects, reraDisclaimer }: ProjectsClientListProps) {
-  const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "priced" | "active" | "lapsed">("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+type StatusFilter = "all" | "priced" | "unpriced";
+type PropertyFilter = PropertyTypeCategory | "all";
 
-  // 1. Search & Filter logic
+const PROPERTY_FILTERS: { value: PropertyFilter; label: string }[] = [
+  { value: "all", label: "All types" },
+  { value: "residential", label: PROPERTY_TYPE_LABELS.residential },
+  { value: "commercial", label: PROPERTY_TYPE_LABELS.commercial },
+  { value: "mixed", label: PROPERTY_TYPE_LABELS.mixed },
+  { value: "industrial", label: PROPERTY_TYPE_LABELS.industrial },
+  { value: "plotted", label: PROPERTY_TYPE_LABELS.plotted },
+  { value: "other", label: PROPERTY_TYPE_LABELS.other },
+];
+
+function projectMatchesSearch(project: ProjectRow, query: string): boolean {
+  if (!query.trim()) return true;
+  const q = query.toLowerCase();
+  const meta = parseProjectMeta(project);
+  const haystack = [
+    project.name,
+    project.rera_number,
+    project.description ?? "",
+    project.status ?? "",
+    meta.propertyType ?? "",
+    meta.district ?? "",
+    PROPERTY_TYPE_LABELS[meta.propertyCategory],
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q);
+}
+
+export function ProjectsClientList({ initialProjects, reraDisclaimer }: ProjectsClientListProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [propertyType, setPropertyType] = useState<PropertyFilter>(
+    (searchParams.get("type") as PropertyFilter) || "all",
+  );
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(
+    searchParams.get("filter") === "priced"
+      ? "priced"
+      : searchParams.get("filter") === "unpriced"
+        ? "unpriced"
+        : "all",
+  );
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get("page") ?? "1") || 1);
+  const [pageSize, setPageSize] = useState(Number(searchParams.get("size") ?? "10") || 10);
+
+  const syncUrl = useCallback(
+    (updates: Partial<{ q: string; type: string; filter: string; page: number; size: number }>) => {
+      const params = new URLSearchParams();
+      const q = updates.q ?? search;
+      const type = updates.type ?? propertyType;
+      const filter = updates.filter ?? statusFilter;
+      const page = updates.page ?? currentPage;
+      const size = updates.size ?? pageSize;
+
+      if (q) params.set("q", q);
+      if (type !== "all") params.set("type", type);
+      if (filter !== "all") params.set("filter", filter);
+      if (page > 1) params.set("page", String(page));
+      if (size !== 10) params.set("size", String(size));
+
+      const qs = params.toString();
+      router.replace(qs ? `/projects?${qs}` : "/projects", { scroll: false });
+    },
+    [router, search, propertyType, statusFilter, currentPage, pageSize],
+  );
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<PropertyTypeCategory | "all", number> = {
+      all: initialProjects.length,
+      residential: 0,
+      commercial: 0,
+      mixed: 0,
+      industrial: 0,
+      plotted: 0,
+      other: 0,
+    };
+    for (const p of initialProjects) {
+      counts[categorizePropertyType(p.status)]++;
+    }
+    return counts;
+  }, [initialProjects]);
+
   const filteredProjects = useMemo(() => {
     return initialProjects.filter((p) => {
-      // Search matching
-      const matchesSearch =
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.rera_number.toLowerCase().includes(search.toLowerCase()) ||
-        (p.description && p.description.toLowerCase().includes(search.toLowerCase()));
-
-      if (!matchesSearch) return false;
-
-      // Filter matching
-      if (filterType === "priced") {
-        return p.prices && p.prices.length > 0;
-      }
-      if (filterType === "active") {
-        return p.status?.toLowerCase() === "active";
-      }
-      if (filterType === "lapsed") {
-        return p.status?.toLowerCase() === "lapsed";
-      }
-
+      if (!projectMatchesSearch(p, search)) return false;
+      if (!matchesPropertyCategory(p.status, propertyType)) return false;
+      const meta = parseProjectMeta(p);
+      if (statusFilter === "priced" && !meta.hasPricing) return false;
+      if (statusFilter === "unpriced" && meta.hasPricing) return false;
       return true;
     });
-  }, [initialProjects, search, filterType]);
+  }, [initialProjects, search, propertyType, statusFilter]);
 
-  // Reset page when search or filter changes
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
-  }, [search, filterType, pageSize]);
+  }, [search, propertyType, statusFilter, pageSize]);
 
-  // 2. Pagination calculation
   const totalItems = filteredProjects.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedProjects = useMemo(() => {
-    return filteredProjects.slice(startIndex, startIndex + pageSize);
-  }, [filteredProjects, startIndex, pageSize]);
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedProjects = filteredProjects.slice(startIndex, startIndex + pageSize);
 
-  // Helper to extract district from description (e.g., "Imported from PSRERA PDF. District: Kapurthala")
-  const getDistrict = (desc: string | null) => {
-    if (!desc) return null;
-    const match = desc.match(/District:\s*([^,.\n]+)/i);
-    return match ? match[1].trim() : null;
-  };
+  useEffect(() => {
+    if (safePage !== currentPage) setCurrentPage(safePage);
+  }, [safePage, currentPage]);
 
-  // Helper to get prices summary badge
-  const getPricingSummary = (project: ProjectRow) => {
-    if (!project.prices || project.prices.length === 0) return null;
-
-    // Look for verified transacted price first
-    const transacted = project.prices.find((pr) => pr.price_type === "transacted" && pr.verified);
-    if (transacted) {
-      return {
-        label: `₹${transacted.amount.toLocaleString("en-IN")}/${transacted.unit || "sqft"}`,
-        verified: true,
-        text: "Verified Transacted",
-      };
-    }
-
-    // Fallback to asking price
-    const asking = project.prices.find((pr) => pr.price_type === "asking");
-    if (asking) {
-      return {
-        label: `₹${asking.amount.toLocaleString("en-IN")}/${asking.unit || "sqft"}`,
-        verified: false,
-        text: "Asking Price",
-      };
-    }
-
-    return null;
+  const clearFilters = () => {
+    setSearch("");
+    setPropertyType("all");
+    setStatusFilter("all");
+    setCurrentPage(1);
+    syncUrl({ q: "", type: "all", filter: "all", page: 1 });
   };
 
   return (
     <div className="space-y-6">
-      {/* Search & Filters toolbar */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        {/* Search input */}
-        <div className="relative flex-1 max-w-md">
+      {/* Search */}
+      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
+        <div className="relative">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-stone-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </span>
           <input
-            type="text"
-            placeholder="Search projects by name, RERA ID, district..."
+            type="search"
+            placeholder="Search by name, RERA ID, district, residential, commercial, mixed use…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-stone-900 bg-white placeholder-stone-400 shadow-sm"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              syncUrl({ q: e.target.value, page: 1 });
+            }}
+            className="w-full pl-10 pr-4 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white text-stone-900"
+            aria-label="Search projects"
           />
         </div>
 
-        {/* Filter buttons */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilterType("all")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
-              filterType === "all"
-                ? "bg-brand-600 border-brand-600 text-white shadow-sm"
-                : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
-            }`}
-          >
-            All ({initialProjects.length})
-          </button>
-          <button
-            onClick={() => setFilterType("priced")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
-              filterType === "priced"
-                ? "bg-brand-600 border-brand-600 text-white shadow-sm"
-                : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
-            }`}
-          >
-            With Pricing Data
-          </button>
-          <button
-            onClick={() => setFilterType("active")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
-              filterType === "active"
-                ? "bg-brand-600 border-brand-600 text-white shadow-sm"
-                : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
-            }`}
-          >
-            Active Status
-          </button>
-          <button
-            onClick={() => setFilterType("lapsed")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
-              filterType === "lapsed"
-                ? "bg-brand-600 border-brand-600 text-white shadow-sm"
-                : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
-            }`}
-          >
-            Lapsed Status
-          </button>
+        {/* Property type filters */}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2">Property type</p>
+          <div className="flex flex-wrap gap-2">
+            {PROPERTY_FILTERS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => {
+                  setPropertyType(value);
+                  syncUrl({ type: value, page: 1 });
+                }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                  propertyType === value
+                    ? "bg-brand-600 border-brand-600 text-white shadow-sm"
+                    : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {label}
+                {value !== "all" && (
+                  <span className="ml-1 opacity-70">({categoryCounts[value]})</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Pricing filters */}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2">Pricing</p>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { value: "all" as const, label: "All projects" },
+                { value: "priced" as const, label: "With pricing data" },
+                { value: "unpriced" as const, label: "No prices yet" },
+              ] as const
+            ).map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => {
+                  setStatusFilter(value);
+                  syncUrl({ filter: value, page: 1 });
+                }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                  statusFilter === value
+                    ? "bg-stone-800 border-stone-800 text-white shadow-sm"
+                    : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Showing count */}
-      <div className="flex items-center justify-between text-sm text-stone-500 border-b border-stone-100 pb-2">
+      {/* Results bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-stone-500 border-b border-stone-100 pb-2">
         <p>
-          Found <span className="font-semibold text-stone-900">{totalItems}</span> matching projects
+          <span className="font-semibold text-stone-900">{totalItems}</span> projects
+          {propertyType !== "all" && (
+            <span> · {PROPERTY_TYPE_LABELS[propertyType as PropertyTypeCategory]}</span>
+          )}
+          {search && <span> · matching &ldquo;{search}&rdquo;</span>}
         </p>
         <div className="flex items-center gap-2">
           <span>Show:</span>
           <select
             value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-            className="border border-stone-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white"
+            onChange={(e) => {
+              const size = Number(e.target.value);
+              setPageSize(size);
+              syncUrl({ size, page: 1 });
+            }}
+            className="border border-stone-200 rounded-lg px-2 py-1 bg-white text-stone-700"
           >
             <option value={10}>10</option>
             <option value={20}>20</option>
@@ -172,147 +242,66 @@ export function ProjectsClientList({ initialProjects, reraDisclaimer }: Projects
         </div>
       </div>
 
-      {/* Grid List */}
+      {/* Grid */}
       {paginatedProjects.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-stone-200 rounded-xl bg-stone-50">
-          <p className="text-stone-500 font-medium">No projects match your search criteria.</p>
-          <button
-            onClick={() => {
-              setSearch("");
-              setFilterType("all");
-            }}
-            className="mt-3 text-sm font-semibold text-brand-600 hover:text-brand-700"
-          >
-            Clear filters
+        <div className="text-center py-16 rounded-2xl border border-dashed border-stone-200 bg-stone-50">
+          <p className="text-stone-600 font-medium">No projects match your filters.</p>
+          <p className="mt-2 text-sm text-stone-500 max-w-md mx-auto">
+            Try a broader property type, clear the search, or browse the{" "}
+            <a href="/platform" className="text-brand-600 font-semibold">
+              platform guide
+            </a>{" "}
+            to understand how data enters production.
+          </p>
+          <button onClick={clearFilters} className="mt-4 text-sm font-semibold text-brand-600">
+            Clear all filters
           </button>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
-          {paginatedProjects.map((p) => {
-            const district = getDistrict(p.description);
-            const pricing = getPricingSummary(p);
-
-            return (
-              <div
-                key={p.id}
-                className="group relative rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-md flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-4">
-                    <Link href={`/projects/${p.slug}`} className="no-underline block group-hover:text-brand-600 transition-colors">
-                      <h2 className="text-lg font-bold text-stone-900 leading-tight">
-                        {p.name}
-                      </h2>
-                    </Link>
-                    {/* Status tag */}
-                    <span
-                      className={`shrink-0 rounded px-2 py-0.5 text-xs font-semibold capitalize ${
-                        p.status?.toLowerCase() === "active"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : "bg-amber-50 text-amber-700 border border-amber-200"
-                      }`}
-                    >
-                      {p.status || "Unknown"}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded bg-stone-100 px-2 py-0.5 font-mono text-stone-600 tracking-wider">
-                      RERA: {p.rera_number}
-                    </span>
-                    {district && (
-                      <span className="rounded bg-stone-100 px-2 py-0.5 text-stone-600">
-                        📍 {district}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-stone-100 flex items-center justify-between">
-                  {pricing ? (
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">
-                          {pricing.text}
-                        </span>
-                        <span className="text-base font-extrabold text-stone-900">
-                          {pricing.label}
-                        </span>
-                      </div>
-                      {pricing.verified ? (
-                        <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-100 text-emerald-800" title="Verified Transacted Price">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-stone-100 text-stone-500" title="Unverified/Asking Price Only">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-xs text-stone-400 font-medium italic">
-                      No price records available
-                    </span>
-                  )}
-
-                  <Link
-                    href={`/projects/${p.slug}`}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 no-underline hover:text-brand-700"
-                  >
-                    View Details
-                    <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
+          {paginatedProjects.map((p) => (
+            <ProjectCard key={p.id} project={p} />
+          ))}
         </div>
       )}
 
-      {/* Pagination controls */}
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-stone-200 pt-6 mt-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-stone-200 pt-6">
           <p className="text-sm text-stone-500">
-            Showing <span className="font-semibold text-stone-900">{startIndex + 1}</span> to{" "}
-            <span className="font-semibold text-stone-900">
-              {Math.min(startIndex + pageSize, totalItems)}
-            </span>{" "}
-            of <span className="font-semibold text-stone-900">{totalItems}</span> projects
+            Showing {startIndex + 1}–{Math.min(startIndex + pageSize, totalItems)} of {totalItems}
           </p>
-
           <div className="flex gap-1">
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 text-xs font-bold rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 disabled:opacity-50 disabled:hover:bg-white"
+              onClick={() => {
+                const p = safePage - 1;
+                setCurrentPage(p);
+                syncUrl({ page: p });
+              }}
+              disabled={safePage <= 1}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg border border-stone-200 bg-white disabled:opacity-40"
             >
               Previous
             </button>
-            
             {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((page) => {
-                // Show first, last, current, and page +- 1
-                return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
-              })
+              .filter(
+                (page) =>
+                  page === 1 || page === totalPages || Math.abs(page - safePage) <= 1,
+              )
               .map((page, index, array) => {
-                // Add ellipsis
                 const showEllipsis = index > 0 && page - array[index - 1] > 1;
-
                 return (
                   <div key={page} className="flex gap-1">
-                    {showEllipsis && <span className="px-2 py-1 text-stone-400">...</span>}
+                    {showEllipsis && <span className="px-2 text-stone-400">…</span>}
                     <button
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all border ${
-                        currentPage === page
-                          ? "bg-brand-600 border-brand-600 text-white shadow-sm"
-                          : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
+                      onClick={() => {
+                        setCurrentPage(page);
+                        syncUrl({ page });
+                      }}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg border ${
+                        safePage === page
+                          ? "bg-brand-600 border-brand-600 text-white"
+                          : "bg-white border-stone-200 text-stone-600"
                       }`}
                     >
                       {page}
@@ -320,11 +309,14 @@ export function ProjectsClientList({ initialProjects, reraDisclaimer }: Projects
                   </div>
                 );
               })}
-
             <button
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1.5 text-xs font-bold rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 disabled:opacity-50 disabled:hover:bg-white"
+              onClick={() => {
+                const p = safePage + 1;
+                setCurrentPage(p);
+                syncUrl({ page: p });
+              }}
+              disabled={safePage >= totalPages}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg border border-stone-200 bg-white disabled:opacity-40"
             >
               Next
             </button>
@@ -332,8 +324,7 @@ export function ProjectsClientList({ initialProjects, reraDisclaimer }: Projects
         </div>
       )}
 
-      {/* RERA Disclaimer block */}
-      <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 text-sm text-amber-950 font-medium">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 text-sm text-amber-950 font-medium">
         {reraDisclaimer}
       </div>
     </div>
