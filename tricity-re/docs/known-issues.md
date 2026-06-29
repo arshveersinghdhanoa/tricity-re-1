@@ -27,7 +27,7 @@ Then manually set all env vars matching `.env.example`. The `newchandigarh.in` d
 
 ### 2. Supabase Service Role Key Leaked in Git History
 
-**Issue:** The real `SUPABASE_SERVICE_ROLE_KEY=sb_secret_kqBK6Kxawiysmu_J7NfbEw_HUW26EGq` was committed in plain text in the initial commit's `.env.example`.
+**Issue:** The real `SUPABASE_SERVICE_ROLE_KEY=sb_secret_##############_######_########` was committed in plain text in the initial commit's `.env.example`.
 
 **Mitigation:** The value has been replaced with placeholders in subsequent commits, but the secret remains in the git history. The key must be **rotated** (revoked and regenerated) in the Supabase dashboard as soon as possible.
 
