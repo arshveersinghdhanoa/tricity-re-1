@@ -48,9 +48,13 @@ export default async function HomePage() {
       <JsonLd data={orgJsonLd} />
       <JsonLd data={faqJsonLd} />
 
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-50 via-white to-stone-50 p-8 shadow-sm border border-brand-100/50">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-50/80 via-white to-stone-50 p-8 md:p-10 shadow-md border border-brand-100/60">
+        {/* Subtle grid layout background */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-[0.06] pointer-events-none" />
+        <div className="absolute top-0 right-0 h-48 w-48 translate-x-12 -translate-y-12 rounded-full bg-brand-200/40 blur-3xl pointer-events-none" />
+        
         <div className="relative z-10 space-y-4">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-900">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-900 border border-brand-200/50">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse" />
             Independent property intelligence
           </div>

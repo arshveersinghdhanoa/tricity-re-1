@@ -36,10 +36,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={`${inter.variable} tenant-${tenant.slug}`}>
-      <body className="flex min-h-screen flex-col font-sans">
-        <SiteHeader tenant={tenant} />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
-        <SiteFooter />
+      <body className="relative flex min-h-screen flex-col font-sans bg-stone-50 text-stone-900 antialiased overflow-x-hidden">
+        {/* Dynamic Background Mesh Blobs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-brand-200/20 blur-[100px] sm:blur-[120px]" />
+          <div className="absolute bottom-[20%] right-[-10%] h-[600px] w-[600px] rounded-full bg-brand-100/30 blur-[120px] sm:blur-[140px]" />
+        </div>
+
+        <div className="relative z-10 flex flex-col min-h-screen">
+          <SiteHeader tenant={tenant} />
+          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+          <SiteFooter />
+        </div>
       </body>
     </html>
   );

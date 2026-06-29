@@ -13,3 +13,8 @@ body {
 a {
   @apply text-brand-600 underline-offset-2 hover:underline;
 }
+
+.bg-grid-pattern {
+  background-image: radial-gradient(var(--brand-300) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
