@@ -3,25 +3,13 @@ import { scoreLead } from "@tricity/core";
 import { getServiceSupabase } from "@/lib/supabase";
 import { resolveTenant } from "@/lib/tenant";
 import { sendHotLeadNotification } from "@/lib/notify";
-
-const rateLimit = new Map<string, { count: number; reset: number }>();
-const RATE_LIMIT = 5;
-const RATE_WINDOW_MS = 60_000;
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimit.get(ip);
-  if (!entry || now > entry.reset) {
-    rateLimit.set(ip, { count: 1, reset: now + RATE_WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > RATE_LIMIT;
-}
+import { isLeadRateLimited } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (isRateLimited(ip)) {
+  const supabase = getServiceSupabase();
+
+  if (await isLeadRateLimited(ip, supabase)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
@@ -50,7 +38,6 @@ export async function POST(request: Request) {
     timeline,
   });
 
-  const supabase = getServiceSupabase();
   if (supabase) {
     const { data: tenantRow } = await supabase
       .from("tenants")

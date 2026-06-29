@@ -58,13 +58,13 @@ Then manually set all env vars matching `.env.example`. The `newchandigarh.in` d
 
 **Status:** Client-owned input.
 
-### 5. No GMADA Scraper
+### 5. GMADA — manual import only (automated scrape removed)
 
-**Issue:** The GMADA scraper is listed with placeholder selectors and was never implemented. The Milestone 2 report recommended approach B ("Buildable with stated changes/effort") for GMADA.
+**Issue:** Automated GMADA HTML scraping with fabricated identifiers was removed (Non-negotiable #2/#6). GMADA data enters via Client-verified JSON only (`data/manual/gmada.json`). See `docs/milestone-2-report.md` recommendation B.
 
-**Impact:** Only PSRERA data is available in the pipeline. GMADA data (master plans, allotment info) requires separate implementation.
+**Impact:** No GMADA colonies in staging/production until Client supplies verified records with `sourceReference`.
 
-**Status:** Deferred — requires additional scope.
+**Status:** By design pending Client input.
 
 ### 6. PSRERA Enrichment Not Complete
 
