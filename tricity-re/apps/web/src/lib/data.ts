@@ -1,14 +1,5 @@
 import { getSupabase } from "./supabase";
 
-export interface ProjectRow {
-  id: string;
-  slug: string;
-  name: string;
-  rera_number: string;
-  status: string;
-  description: string | null;
-}
-
 export interface PriceRow {
   price_type: "asking" | "transacted";
   amount: number;
@@ -16,6 +7,16 @@ export interface PriceRow {
   source: string | null;
   unit: string;
   currency: string;
+}
+
+export interface ProjectRow {
+  id: string;
+  slug: string;
+  name: string;
+  rera_number: string;
+  status: string;
+  description: string | null;
+  prices?: PriceRow[];
 }
 
 export async function fetchProjects(tenantSlug: string): Promise<ProjectRow[]> {
@@ -32,11 +33,11 @@ export async function fetchProjects(tenantSlug: string): Promise<ProjectRow[]> {
 
   const { data } = await supabase
     .from("projects")
-    .select("id, slug, name, rera_number, status, description")
+    .select("id, slug, name, rera_number, status, description, prices(price_type, amount, verified, source, unit, currency)")
     .eq("tenant_id", tenant.id)
     .order("name");
 
-  return data ?? [];
+  return (data as any) ?? [];
 }
 
 export async function fetchProjectBySlug(
