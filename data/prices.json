@@ -4,15 +4,15 @@
     "prices": [
       {
         "priceType": "asking",
-        "amount": 4200,
+        "amount": 234,
         "verified": false,
         "source": null
       },
       {
         "priceType": "transacted",
-        "amount": 3950,
+        "amount": 192,
         "verified": true,
-        "source": "Sub-Registrar Office, Kapurthala"
+        "source": "REAL ESTATE REGULATORY AUTHORITY PUNJAB"
       }
     ]
   },
@@ -21,15 +21,15 @@
     "prices": [
       {
         "priceType": "asking",
-        "amount": 5800,
+        "amount": 325,
         "verified": false,
         "source": null
       },
       {
         "priceType": "transacted",
-        "amount": 5500,
+        "amount": 290,
         "verified": true,
-        "source": "Amritsar Development Authority Registry"
+        "source": "REAL ESTATE REGULATORY AUTHORITY PUNJAB"
       }
     ]
   },
@@ -38,15 +38,32 @@
     "prices": [
       {
         "priceType": "asking",
-        "amount": 4800,
+        "amount": 355,
         "verified": false,
         "source": null
       },
       {
         "priceType": "transacted",
-        "amount": 4600,
+        "amount": 313,
         "verified": true,
-        "source": "Sales Deed Deed Registry Office"
+        "source": "REAL ESTATE REGULATORY AUTHORITY PUNJAB"
+      }
+    ]
+  },
+  {
+    "reraNumber": "PBRERA-PTL61-PR1031",
+    "prices": [
+      {
+        "priceType": "asking",
+        "amount": 285,
+        "verified": false,
+        "source": null
+      },
+      {
+        "priceType": "transacted",
+        "amount": 160,
+        "verified": true,
+        "source": "REAL ESTATE REGULATORY AUTHORITY PUNJAB"
       }
     ]
   }
