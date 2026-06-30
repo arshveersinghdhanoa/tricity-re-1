@@ -1,0 +1,13 @@
+name: Data Pipeline — Legacy (disabled)
+
+# This workflow has been superseded by pipeline.yml
+# Kept for reference only — disabled via the 'on' trigger
+
+on:
+  workflow_dispatch: # manual-only, no automatic runs
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "This workflow is disabled. Use the 'Data Pipeline — Daily Scrape & Promote' workflow instead."
