@@ -49,5 +49,22 @@
         "source": "Sales Deed Deed Registry Office"
       }
     ]
+  },
+  {
+    "reraNumber": "PBRERA-PTL61-PR1031",
+    "prices":[
+      {
+        "priceType": "asking",
+        "amount": 96000000,
+        "verified": false,
+        "source": null
+      },
+      {
+        "priceType": "transacted",
+        "amount": 94775000,
+        "verified": true,
+        "source": "REAL ESTATE REGULATORY AUTHORITY PUNJAB"
+      }
+    ]
   }
 ]
