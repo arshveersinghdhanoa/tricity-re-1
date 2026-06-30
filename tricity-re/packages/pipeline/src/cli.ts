@@ -4,8 +4,6 @@ import { scrapePsrera, scrapeGmada } from "./scrape.js";
 import { promoteProjects } from "./promote.js";
 import { importPrices } from "./prices.js";
 import { importStagingPrices } from "./staging-prices.js";
-import { importStagingDetails } from "./staging-details.js";
-import { backfillPdfMetadata } from "./promote-details.js";
 import type { PortalId } from "./config.js";
 import { PORTALS } from "./config.js";
 
@@ -137,30 +135,9 @@ async function main(): Promise<void> {
       break;
     }
 
-    case "stage-details": {
-      const result = await importStagingDetails({
-        file: getArg("file"),
-        tenantId: getArg("tenant"),
-        dryRun: hasFlag("dry-run"),
-      });
-      console.log(JSON.stringify(result, null, 2));
-      process.exit(result.inserted === 0 && result.errors.length > 0 ? 1 : 0);
-      break;
-    }
-
-    case "backfill-metadata": {
-      const result = await backfillPdfMetadata({
-        tenantId: getArg("tenant"),
-        limit: parseInt(getArg("limit") ?? "200", 10),
-      });
-      console.log(JSON.stringify(result, null, 2));
-      process.exit(result.updated === 0 && result.errors.length > 0 ? 1 : 0);
-      break;
-    }
-
     default:
       console.log(
-        `Usage: tricity-pipeline <inspect|dry-run|scrape|promote|import-prices|stage-prices|stage-details|backfill-metadata> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N] [--file=path] [--dry-run]`,
+        `Usage: tricity-pipeline <inspect|dry-run|scrape|promote|import-prices|stage-prices> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N] [--file=path/to/json] [--dry-run]`,
       );
       process.exit(command ? 1 : 0);
       break;

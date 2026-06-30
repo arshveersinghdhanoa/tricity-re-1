@@ -15,9 +15,7 @@ export interface ProjectRow {
   name: string;
   rera_number: string;
   status: string;
-  property_type: string | null;
   description: string | null;
-  metadata?: Record<string, unknown> | null;
   prices?: PriceRow[];
 }
 
@@ -35,7 +33,7 @@ export async function fetchProjects(tenantSlug: string): Promise<ProjectRow[]> {
 
   const { data } = await supabase
     .from("projects")
-    .select("id, slug, name, rera_number, status, property_type, description, metadata, prices(price_type, amount, verified, source, unit, currency)")
+    .select("id, slug, name, rera_number, status, description, prices(price_type, amount, verified, source, unit, currency)")
     .eq("tenant_id", tenant.id)
     .order("name");
 
@@ -59,7 +57,7 @@ export async function fetchProjectBySlug(
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id, slug, name, rera_number, status, property_type, description, metadata")
+    .select("id, slug, name, rera_number, status, description")
     .eq("tenant_id", tenant.id)
     .eq("slug", slug)
     .maybeSingle();

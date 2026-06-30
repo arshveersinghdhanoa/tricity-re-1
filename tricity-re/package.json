@@ -13,8 +13,6 @@
     "pipeline:promote": "pnpm --filter @tricity/pipeline promote",
     "pipeline:import-prices": "pnpm --filter @tricity/pipeline import-prices",
     "pipeline:stage-prices": "pnpm --filter @tricity/pipeline stage-prices",
-    "pipeline:stage-details": "pnpm --filter @tricity/pipeline stage-details",
-    "pipeline:backfill-metadata": "pnpm --filter @tricity/pipeline backfill-metadata",
     "demo": "node scripts/run-demo.mjs"
   },
   "engines": {

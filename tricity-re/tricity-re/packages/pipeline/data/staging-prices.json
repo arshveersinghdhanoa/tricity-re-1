@@ -1,0 +1,16 @@
+[
+  {
+    "reraNumber": "PBRERA-SAS06-PR0123",
+    "priceType": "asking",
+    "amount": 4200,
+    "verified": false,
+    "source": null
+  },
+  {
+    "reraNumber": "PBRERA-SAS06-PR0123",
+    "priceType": "transacted",
+    "amount": 3950,
+    "verified": true,
+    "source": "Sub-Registrar Office, SAS Nagar"
+  }
+]

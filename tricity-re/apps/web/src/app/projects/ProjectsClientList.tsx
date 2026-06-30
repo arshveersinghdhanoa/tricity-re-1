@@ -106,7 +106,7 @@ export function ProjectsClientList({ initialProjects, reraDisclaimer }: Projects
   const filteredProjects = useMemo(() => {
     return initialProjects.filter((p) => {
       if (!projectMatchesSearch(p, search)) return false;
-      if (!matchesPropertyCategory(p.status, propertyType, p.property_type)) return false;
+      if (!matchesPropertyCategory(p.status, propertyType)) return false;
       const meta = parseProjectMeta(p);
       if (statusFilter === "priced" && !meta.hasPricing) return false;
       if (statusFilter === "unpriced" && meta.hasPricing) return false;
