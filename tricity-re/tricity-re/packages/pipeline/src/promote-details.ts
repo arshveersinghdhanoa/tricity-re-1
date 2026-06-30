@@ -32,7 +32,7 @@ export async function promoteProjectDetails(tenantId: string): Promise<{ promote
         .maybeSingle();
 
       if (!project) {
-        errors.push(`Detail for ${row.rera_number}: project not in production — run promote first`);
+        console.warn(`[promote] detail for ${row.rera_number}: project not in production yet — deferred`);
         continue;
       }
 
