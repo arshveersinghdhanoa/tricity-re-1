@@ -47,6 +47,10 @@ jobs:
         working-directory: tricity-re
         run: pnpm install --frozen-lockfile
 
+      - name: Build core package
+        working-directory: tricity-re
+        run: pnpm --filter @tricity/core build
+
       - name: Build pipeline
         working-directory: tricity-re
         run: pnpm --filter @tricity/pipeline build
