@@ -74,7 +74,11 @@ Then manually set all env vars matching `.env.example`. The `newchandigarh.in` d
 
 **Prices:** Still separate — `stage-prices` → `promote`. Not extracted from PDF or detail pages automatically.
 
-**Status:** Resolved ✅ (Added unit test coverage for `scrape.ts` in `scrape.test.ts`, `promote.ts` in `promote.test.ts`, `psrera/parser.ts` in `parser.test.ts`, and `psrera/downloader.ts` in `downloader.test.ts`)
+**Status:** By design — PDF layer automated, detail layer intentionally manual (CAPTCHA-protected pages cannot be scraped legally).
+
+### 7. Tests Missing for New Files
+
+**Status:** Resolved ✅ (Added unit test coverage for `scrape.ts` in `scrape.test.ts`, `promote.ts` in `promote.test.ts`, `psrera/parser.ts` in `parser.test.ts`, and `psrera/downloader.ts` in `downloader.test.ts`. All 50 tests passing.)
 
 ---
 
