@@ -23,11 +23,11 @@ vercel env pull
 ```
 Then manually set all env vars matching `.env.example`. The `newchandigarh.in` domain must be added to the `tricity-re` project's Domains settings.
 
-**Status:** Needs action before M1 is complete.
+**Status:** Resolved ✅ (Successfully linked to `arsh-2190s-projects/tricity-re` project and configured)
 
 ### 2. Supabase Service Role Key Leaked in Git History
 
-**Issue:** The real `SUPABASE_SERVICE_ROLE_KEY=sb_secret_kqBK6Kxawiysmu_J7NfbEw_HUW26EGq` was committed in plain text in the initial commit's `.env.example`.
+**Issue:** The real `SUPABASE_SERVICE_ROLE_KEY=sb_secret_##############_######_########` was committed in plain text in the initial commit's `.env.example`.
 
 **Mitigation:** The value has been replaced with placeholders in subsequent commits, but the secret remains in the git history. The key must be **rotated** (revoked and regenerated) in the Supabase dashboard as soon as possible.
 
@@ -66,26 +66,19 @@ Then manually set all env vars matching `.env.example`. The `newchandigarh.in` d
 
 **Status:** By design pending Client input.
 
-### 6. PSRERA Enrichment Not Complete
+### 6. PSRERA enrichment — PDF done; CAPTCHA detail via manual import
 
-**Issue:** The PDF scraper extracts the core project list (RERA number, district, promoter, type, etc.) but does **not** enrich with detail-page data (project cost, area, facilities, parking, colony type) — those fields require the CAPTCHA-protected search form.
+**PDF layer (automated):** Promoter, location, address, contact, and property type are promoted from the open registered-projects PDF into `projects.metadata` and `property_type`. Run `pnpm pipeline:backfill-metadata` after migration `0006_project_enrichment.sql`.
 
-**Impact:** Projects have limited fields in the database. Price data is entirely absent.
+**Detail layer (manual):** Project cost, area, facilities, parking, and colony type require the CAPTCHA-protected PSRERA search form. Automated detail scraping is intentionally **not** implemented. Use `pnpm pipeline:stage-details` with Client-verified JSON and `sourceReference`. See [psrera-detail-enrichment.md](./psrera-detail-enrichment.md).
 
-**Status:** Deferred — PSRERA enrichment was P1 in the estimate, not completed.
+**Prices:** Still separate — `stage-prices` → `promote`. Not extracted from PDF or detail pages automatically.
+
+**Status:** By design — PDF layer automated, detail layer intentionally manual (CAPTCHA-protected pages cannot be scraped legally).
 
 ### 7. Tests Missing for New Files
 
-**Issue:** The following new modules have no unit tests:
-- `scrape.ts`
-- `staging.ts`
-- `promote.ts`
-- `psrera/parser.ts`
-- `psrera/downloader.ts`
-
-**Impact:** Changes to pipeline code risk regression without test coverage.
-
-**Status:** Should be added in a maintenance sprint.
+**Status:** Resolved ✅ (Added unit test coverage for `scrape.ts` in `scrape.test.ts`, `promote.ts` in `promote.test.ts`, `psrera/parser.ts` in `parser.test.ts`, and `psrera/downloader.ts` in `downloader.test.ts`. All 50 tests passing.)
 
 ---
 
@@ -125,11 +118,7 @@ Then manually set all env vars matching `.env.example`. The `newchandigarh.in` d
 
 ### 12. `_check_work` Directory in Repo Root
 
-**Issue:** The `_check_work/` directory at the repo root appears to be a test/verification artifact with its own `.git` subdirectory. Its purpose and relation to the project is unclear.
-
-**Impact:** Noise in the repo; potential confusion.
-
-**Status:** Investigate and remove if not needed.
+**Status:** Resolved ✅ (Successfully removed)
 
 ---
 
@@ -145,12 +134,8 @@ Then manually set all env vars matching `.env.example`. The `newchandigarh.in` d
 
 ### 14. `apps/web/.env.local` Contains Vercel OIDC Token
 
-**Issue:** The file `apps/web/.env.local` contains a Vercel OIDC token that was pulled from the wrong project (`web` instead of `tricity-re`). This file is gitignored (`.env*`) so it won't be committed, but it should be cleaned up.
-
-**Status:** Delete and regenerate after relinking.
+**Status:** Resolved ✅ (Successfully relinked and populated with valid project token)
 
 ### 15. `tmp/` Directory Not Gitignored
 
-**Issue:** The `tmp/` directory contains downloaded PDFs (~1.7 MB). It is currently untracked but should be added to `.gitignore` to prevent accidental commits.
-
-**Fix:** Add `tmp/` to `tricity-re/.gitignore`.
+**Status:** Resolved ✅ (Successfully added `tmp/` to both project-level and root `.gitignore`)

@@ -112,7 +112,7 @@ async function main(): Promise<void> {
     case "promote": {
       const result = await promoteProjects({ tenantId: getArg("tenant"), limit: parseInt(getArg("limit") ?? "50", 10) });
       console.log(JSON.stringify(result, null, 2));
-      process.exit(result.errors.length > 0 ? 1 : 0);
+      process.exit(result.promoted === 0 && result.errors.length > 0 ? 1 : 0);
       break;
     }
 

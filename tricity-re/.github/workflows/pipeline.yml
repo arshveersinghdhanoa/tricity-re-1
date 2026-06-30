@@ -47,11 +47,13 @@ jobs:
         working-directory: tricity-re
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
+      - name: Build core package
         working-directory: tricity-re
-        run: |
-          pnpm --filter @tricity/core build
-          pnpm --filter @tricity/pipeline build
+        run: pnpm --filter @tricity/core build
+
+      - name: Build pipeline
+        working-directory: tricity-re
+        run: pnpm --filter @tricity/pipeline build
 
       - name: Download PSRERA PDF
         working-directory: tricity-re

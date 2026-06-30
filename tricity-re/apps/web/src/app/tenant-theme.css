@@ -15,7 +15,7 @@
 
 /* Tenant-specific overrides */
 
-/* New Chandigarh: Lush Green/Teal Natural Theme */
+/* New Chandigarh: Vibrant Blue/Indigo Technology Theme */
 .tenant-newchandigarh {
   --brand-50: #effff0;
   --brand-100: #dbfede;
@@ -43,13 +43,13 @@
   --brand-900: #7c2d12;
 }
 
-/* Ajitgarh: Vibrant Blue/Indigo Technology Theme */
+/* Ajitgarh: Lush Green/Teal Natural Theme */
 .tenant-ajitgarh {
-  --brand-50: #f0fdfd;
-  --brand-100: #dcfcfa;
-  --brand-200: #bbf7f6;
-  --brand-300: #86efe6;
-  --brand-400: #4aded9;
+  --brand-50: #f0fdf4;
+  --brand-100: #dcfcf9;
+  --brand-200: #bbf7ec;
+  --brand-300: #86efe1;
+  --brand-400: #4adecf;
   --brand-500: #10b98f;
   --brand-600: #05967b;
   --brand-700: #047865;

@@ -1,27 +1,24 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { getSupabase, resolveTenantId, type StagingProjectRow } from "./staging.js";
+import { getSupabase, resolveTenantId } from "./staging.js";
 
 export interface PromoteResult {
   promoted: number;
   skipped: number;
   pricesPromoted: number;
-  pricesDeferred: number;
   errors: string[];
 }
 
 export async function promoteProjects(options: { tenantId?: string; limit?: number } = {}): Promise<PromoteResult> {
   const supabase = getSupabase();
-  if (!supabase) return { promoted: 0, skipped: 0, pricesPromoted: 0, pricesDeferred: 0, errors: ["Supabase not configured"] };
+  if (!supabase) return { promoted: 0, skipped: 0, pricesPromoted: 0, errors: ["Supabase not configured"] };
 
   const tenantSlug = options.tenantId ?? process.env.NEXT_PUBLIC_DEFAULT_TENANT ?? "newchandigarh";
   const tenantId = await resolveTenantId(tenantSlug);
-  if (!tenantId) return { promoted: 0, skipped: 0, pricesPromoted: 0, pricesDeferred: 0, errors: [`Tenant not found: ${tenantSlug}`] };
+  if (!tenantId) return { promoted: 0, skipped: 0, pricesPromoted: 0, errors: [`Tenant not found: ${tenantSlug}`] };
   const limit = options.limit ?? 50;
   const errors: string[] = [];
   let promoted = 0;
   let skipped = 0;
   let pricesPromoted = 0;
-  let pricesDeferred = 0;
 
   const { data: rows, error: fetchError } = await supabase
     .from("staging_projects")
@@ -31,145 +28,101 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
     .eq("tenant_id", tenantId)
     .limit(limit);
 
-  if (fetchError) return { promoted: 0, skipped: 0, pricesPromoted: 0, pricesDeferred: 0, errors: [`Fetch failed: ${fetchError.message}`] };
+  if (fetchError) return { promoted: 0, skipped: 0, pricesPromoted: 0, errors: [`Fetch failed: ${fetchError.message}`] };
 
   if (!rows || rows.length === 0) {
     console.log("[promote] No unpromoted valid staging rows found");
+    // Still try to promote any orphaned staging_prices
     const priceResult = await promoteStagingPrices(tenantId);
     pricesPromoted += priceResult.promoted;
-    pricesDeferred += priceResult.deferred;
     errors.push(...priceResult.errors);
-    return { promoted: 0, skipped: 0, pricesPromoted, pricesDeferred, errors };
+    return { promoted: 0, skipped: 0, pricesPromoted, errors };
   }
 
   for (const row of rows) {
     try {
-      const outcome = await promoteSingleStagingProject(supabase, tenantId, row);
-      if (outcome.status === "promoted") promoted++;
-      else if (outcome.status === "skipped") skipped++;
-      else if (outcome.error) errors.push(outcome.error);
+      // Prevent fabricated project numbers from entering production (Non-negotiable #2)
+      if (!/^PBRERA-/.test(row.rera_number)) {
+        errors.push(`Refusing non-PSRERA rera_number: ${row.rera_number}`);
+        continue;
+      }
+
+      const existing = await supabase
+        .from("projects")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("rera_number", row.rera_number)
+        .maybeSingle();
+
+      if (existing.data) {
+        await supabase.from("status_transitions").insert({
+          project_id: existing.data.id,
+          from_status: "active",
+          to_status: row.parsed_status ?? "active",
+          source: "psrera_pdf",
+        });
+
+        await supabase.from("promotion_log").insert({
+          entity_type: "project",
+          staging_id: row.id,
+          production_id: existing.data.id,
+          action: "skipped_dup",
+          details: { reason: "rera_number already exists" },
+        });
+
+        await supabase
+          .from("staging_projects")
+          .update({ promoted_at: new Date().toISOString() })
+          .eq("id", row.id);
+
+        skipped++;
+        continue;
+      }
+
+      const { data: newProject, error: insertError } = await supabase
+        .from("projects")
+        .insert({
+          tenant_id: tenantId,
+          rera_number: row.rera_number,
+          name: row.parsed_name ?? row.rera_number,
+          slug: slugify(row.parsed_name ?? row.rera_number, row.rera_number),
+          status: row.parsed_status ?? "active",
+          description: `Imported from PSRERA PDF. District: ${(row.raw_payload as Record<string, unknown>)?.district ?? "unknown"}`,
+        })
+        .select("id")
+        .single();
+
+      if (insertError) {
+        errors.push(`Insert failed for ${row.rera_number}: ${insertError.message}`);
+        continue;
+      }
+
+      await supabase.from("promotion_log").insert({
+        entity_type: "project",
+        staging_id: row.id,
+        production_id: newProject.id,
+        action: "promoted",
+        details: { rera_number: row.rera_number },
+      });
+
+      await supabase
+        .from("staging_projects")
+        .update({ promoted_at: new Date().toISOString() })
+        .eq("id", row.id);
+
+      promoted++;
     } catch (err) {
       errors.push(`Error processing ${row.rera_number}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
+  // After promoting projects, promote any valid staging_prices
   const priceResult = await promoteStagingPrices(tenantId);
   pricesPromoted += priceResult.promoted;
-  pricesDeferred += priceResult.deferred;
   errors.push(...priceResult.errors);
 
-  console.log(
-    `[promote] ${promoted} promoted, ${skipped} skipped (duplicates), ${pricesPromoted} prices promoted, ${pricesDeferred} prices deferred, ${errors.length} errors`,
-  );
-  return { promoted, skipped, pricesPromoted, pricesDeferred, errors };
-}
-
-type ProjectPromoteOutcome =
-  | { status: "promoted"; projectId: string }
-  | { status: "skipped"; projectId: string }
-  | { status: "error"; error: string };
-
-async function promoteSingleStagingProject(
-  supabase: SupabaseClient,
-  tenantId: string,
-  row: StagingProjectRow,
-): Promise<ProjectPromoteOutcome> {
-  if (!/^PBRERA-/.test(row.rera_number)) {
-    return { status: "error", error: `Refusing non-PSRERA rera_number: ${row.rera_number}` };
-  }
-
-  const existing = await supabase
-    .from("projects")
-    .select("id")
-    .eq("tenant_id", tenantId)
-    .eq("rera_number", row.rera_number)
-    .maybeSingle();
-
-  if (existing.data) {
-    await supabase.from("status_transitions").insert({
-      project_id: existing.data.id,
-      from_status: "active",
-      to_status: row.parsed_status ?? "active",
-      source: "psrera_pdf",
-    });
-
-    await supabase.from("promotion_log").insert({
-      entity_type: "project",
-      staging_id: row.id,
-      production_id: existing.data.id,
-      action: "skipped_dup",
-      details: { reason: "rera_number already exists" },
-    });
-
-    await supabase
-      .from("staging_projects")
-      .update({ promoted_at: new Date().toISOString() })
-      .eq("id", row.id);
-
-    return { status: "skipped", projectId: existing.data.id };
-  }
-
-  const { data: newProject, error: insertError } = await supabase
-    .from("projects")
-    .insert({
-      tenant_id: tenantId,
-      rera_number: row.rera_number,
-      name: row.parsed_name ?? row.rera_number,
-      slug: slugify(row.parsed_name ?? row.rera_number, row.rera_number),
-      status: row.parsed_status ?? "active",
-      description: `Imported from PSRERA PDF. District: ${(row.raw_payload as Record<string, unknown>)?.district ?? "unknown"}`,
-    })
-    .select("id")
-    .single();
-
-  if (insertError) {
-    return { status: "error", error: `Insert failed for ${row.rera_number}: ${insertError.message}` };
-  }
-
-  await supabase.from("promotion_log").insert({
-    entity_type: "project",
-    staging_id: row.id,
-    production_id: newProject.id,
-    action: "promoted",
-    details: { rera_number: row.rera_number },
-  });
-
-  await supabase
-    .from("staging_projects")
-    .update({ promoted_at: new Date().toISOString() })
-    .eq("id", row.id);
-
-  return { status: "promoted", projectId: newProject.id };
-}
-
-async function resolveProductionProjectId(
-  supabase: SupabaseClient,
-  tenantId: string,
-  reraNumber: string,
-): Promise<string | null> {
-  const { data: existing } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("tenant_id", tenantId)
-    .eq("rera_number", reraNumber)
-    .maybeSingle();
-
-  if (existing) return existing.id;
-
-  const { data: stagingRow } = await supabase
-    .from("staging_projects")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .eq("rera_number", reraNumber)
-    .eq("validation_status", "valid")
-    .is("promoted_at", null)
-    .maybeSingle();
-
-  if (!stagingRow) return null;
-
-  const outcome = await promoteSingleStagingProject(supabase, tenantId, stagingRow);
-  if (outcome.status === "error") return null;
-  return outcome.projectId;
+  console.log(`[promote] ${promoted} promoted, ${skipped} skipped (duplicates), ${pricesPromoted} prices promoted, ${errors.length} errors`);
+  return { promoted, skipped, pricesPromoted, errors };
 }
 
 /**
@@ -180,9 +133,9 @@ async function resolveProductionProjectId(
  * - verified=true is set ONLY when the staging row has verified=true AND a non-empty source.
  * - All other prices are stored as verified=false (UI will label them "Indicative").
  */
-export async function promoteStagingPrices(tenantId: string): Promise<{ promoted: number; deferred: number; errors: string[] }> {
+export async function promoteStagingPrices(tenantId: string): Promise<{ promoted: number; errors: string[] }> {
   const supabase = getSupabase();
-  if (!supabase) return { promoted: 0, deferred: 0, errors: ["Supabase not configured"] };
+  if (!supabase) return { promoted: 0, errors: ["Supabase not configured"] };
 
   const { data: stagingPrices, error: fetchError } = await supabase
     .from("staging_prices")
@@ -192,33 +145,38 @@ export async function promoteStagingPrices(tenantId: string): Promise<{ promoted
     .eq("tenant_id", tenantId)
     .limit(200);
 
-  if (fetchError) return { promoted: 0, deferred: 0, errors: [`Fetch staging_prices failed: ${fetchError.message}`] };
-  if (!stagingPrices || stagingPrices.length === 0) return { promoted: 0, deferred: 0, errors: [] };
+  if (fetchError) return { promoted: 0, errors: [`Fetch staging_prices failed: ${fetchError.message}`] };
+  if (!stagingPrices || stagingPrices.length === 0) return { promoted: 0, errors: [] };
 
   const errors: string[] = [];
   let promoted = 0;
-  let deferred = 0;
 
   for (const sp of stagingPrices) {
     try {
+      // Look up the production project by RERA number
       const reraNumber = sp.rera_number;
       if (!reraNumber) {
         errors.push(`staging_price ${sp.id}: missing rera_number`);
         continue;
       }
 
-      const projectId = await resolveProductionProjectId(supabase, tenantId, reraNumber);
+      const { data: project } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("rera_number", reraNumber)
+        .maybeSingle();
 
-      if (!projectId) {
-        console.warn(`[promote] staging_price ${sp.id}: project ${reraNumber} not in production yet — deferred`);
-        deferred++;
+      if (!project) {
+        errors.push(`staging_price ${sp.id}: project ${reraNumber} not in production yet`);
         continue;
       }
 
+      // Non-negotiable #1: only mark verified=true when genuinely sourced
       const isGenuinelyVerified = sp.verified === true && sp.source && sp.source.trim().length > 0;
 
       const { error: insertError } = await supabase.from("prices").insert({
-        project_id: projectId,
+        project_id: project.id,
         price_type: sp.price_type,
         amount: sp.amount,
         currency: "INR",
@@ -236,7 +194,7 @@ export async function promoteStagingPrices(tenantId: string): Promise<{ promoted
       await supabase.from("promotion_log").insert({
         entity_type: "price",
         staging_id: sp.id,
-        production_id: projectId,
+        production_id: project.id,
         action: "promoted",
         details: { rera_number: reraNumber, price_type: sp.price_type, amount: sp.amount, verified: isGenuinelyVerified },
       });
@@ -255,10 +213,7 @@ export async function promoteStagingPrices(tenantId: string): Promise<{ promoted
   if (promoted > 0) {
     console.log(`[promote] ${promoted} staging prices promoted to production`);
   }
-  if (deferred > 0) {
-    console.log(`[promote] ${deferred} staging prices deferred (project not in production yet)`);
-  }
-  return { promoted, deferred, errors };
+  return { promoted, errors };
 }
 
 function slugify(text: string, reraNumber: string): string {
@@ -270,3 +225,4 @@ function slugify(text: string, reraNumber: string): string {
   const suffix = reraNumber.toLowerCase().replace(/[^a-z0-9]/g, "").slice(-6);
   return `${base}-${suffix}`;
 }
+
