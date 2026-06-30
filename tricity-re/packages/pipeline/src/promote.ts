@@ -1,4 +1,6 @@
 import { getSupabase, resolveTenantId } from "./staging.js";
+import { buildMetadataFromPdfPayload } from "./project-metadata.js";
+import { promoteProjectDetails } from "./promote-details.js";
 
 export interface PromoteResult {
   promoted: number;
@@ -55,10 +57,22 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
         .maybeSingle();
 
       if (existing.data) {
+        const enriched = buildMetadataFromPdfPayload(row.raw_payload as Record<string, unknown>);
+        await supabase
+          .from("projects")
+          .update({
+            property_type: enriched.property_type,
+            metadata: enriched.metadata,
+            description: enriched.description,
+            status: "active",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.data.id);
+
         await supabase.from("status_transitions").insert({
           project_id: existing.data.id,
           from_status: "active",
-          to_status: row.parsed_status ?? "active",
+          to_status: enriched.property_type ?? "active",
           source: "psrera_pdf",
         });
 
@@ -79,6 +93,8 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
         continue;
       }
 
+      const enriched = buildMetadataFromPdfPayload(row.raw_payload as Record<string, unknown>);
+
       const { data: newProject, error: insertError } = await supabase
         .from("projects")
         .insert({
@@ -86,8 +102,10 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
           rera_number: row.rera_number,
           name: row.parsed_name ?? row.rera_number,
           slug: slugify(row.parsed_name ?? row.rera_number, row.rera_number),
-          status: row.parsed_status ?? "active",
-          description: `Imported from PSRERA PDF. District: ${(row.raw_payload as Record<string, unknown>)?.district ?? "unknown"}`,
+          status: "active",
+          property_type: enriched.property_type,
+          metadata: enriched.metadata,
+          description: enriched.description,
         })
         .select("id")
         .single();
@@ -120,6 +138,12 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
   const priceResult = await promoteStagingPrices(tenantId);
   pricesPromoted += priceResult.promoted;
   errors.push(...priceResult.errors);
+
+  const detailResult = await promoteProjectDetails(tenantId);
+  if (detailResult.promoted > 0) {
+    console.log(`[promote] ${detailResult.promoted} detail enrichment(s) merged`);
+  }
+  errors.push(...detailResult.errors);
 
   console.log(`[promote] ${promoted} promoted, ${skipped} skipped (duplicates), ${pricesPromoted} prices promoted, ${errors.length} errors`);
   return { promoted, skipped, pricesPromoted, errors };

@@ -1,3 +1,5 @@
+import type { ProjectMetadata } from "./project-metadata.js";
+
 export type PropertyTypeCategory =
   | "residential"
   | "commercial"
@@ -8,7 +10,9 @@ export type PropertyTypeCategory =
 
 export interface ProjectMetaInput {
   status: string | null;
+  property_type?: string | null;
   description: string | null;
+  metadata?: ProjectMetadata | null;
   prices?: unknown[] | null;
 }
 
@@ -48,15 +52,6 @@ export function categorizePropertyType(status: string | null): PropertyTypeCateg
   return "other";
 }
 
-export function parseProjectMeta(project: ProjectMetaInput): ProjectMeta {
-  return {
-    district: extractDistrict(project.description),
-    propertyType: extractPropertyType(project.status),
-    propertyCategory: categorizePropertyType(project.status),
-    hasPricing: Boolean(project.prices && project.prices.length > 0),
-  };
-}
-
 export const PROPERTY_TYPE_LABELS: Record<PropertyTypeCategory, string> = {
   residential: "Residential",
   commercial: "Commercial",
@@ -66,10 +61,30 @@ export const PROPERTY_TYPE_LABELS: Record<PropertyTypeCategory, string> = {
   other: "Other",
 };
 
+export function parseProjectMeta(project: ProjectMetaInput): ProjectMeta {
+  const propertyTypeRaw =
+    project.property_type?.trim() ||
+    extractPropertyType(project.status) ||
+    null;
+
+  const district =
+    project.metadata?.district?.trim() ||
+    extractDistrict(project.description);
+
+  return {
+    district: district || null,
+    propertyType: propertyTypeRaw,
+    propertyCategory: categorizePropertyType(propertyTypeRaw),
+    hasPricing: Boolean(project.prices && project.prices.length > 0),
+  };
+}
+
 export function matchesPropertyCategory(
   status: string | null,
   category: PropertyTypeCategory | "all",
+  propertyType?: string | null,
 ): boolean {
   if (category === "all") return true;
-  return categorizePropertyType(status) === category;
+  const raw = propertyType?.trim() || extractPropertyType(status);
+  return categorizePropertyType(raw) === category;
 }

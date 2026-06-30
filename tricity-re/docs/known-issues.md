@@ -66,13 +66,13 @@ Then manually set all env vars matching `.env.example`. The `newchandigarh.in` d
 
 **Status:** By design pending Client input.
 
-### 6. PSRERA Enrichment Not Complete
+### 6. PSRERA enrichment — PDF done; CAPTCHA detail via manual import
 
-**Issue:** The PDF scraper extracts the core project list (RERA number, district, promoter, type, etc.) but does **not** enrich with detail-page data (project cost, area, facilities, parking, colony type) — those fields require the CAPTCHA-protected search form.
+**PDF layer (automated):** Promoter, location, address, contact, and property type are promoted from the open registered-projects PDF into `projects.metadata` and `property_type`. Run `pnpm pipeline:backfill-metadata` after migration `0006_project_enrichment.sql`.
 
-**Impact:** Projects have limited fields in the database. Price data is entirely absent.
+**Detail layer (manual):** Project cost, area, facilities, parking, and colony type require the CAPTCHA-protected PSRERA search form. Automated detail scraping is intentionally **not** implemented. Use `pnpm pipeline:stage-details` with Client-verified JSON and `sourceReference`. See [psrera-detail-enrichment.md](./psrera-detail-enrichment.md).
 
-**Status:** Deferred — PSRERA enrichment was P1 in the estimate, not completed.
+**Prices:** Still separate — `stage-prices` → `promote`. Not extracted from PDF or detail pages automatically.
 
 ### 7. Tests Missing for New Files
 
