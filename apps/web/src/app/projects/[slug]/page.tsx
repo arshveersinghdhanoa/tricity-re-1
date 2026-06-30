@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { PriceDisplay } from "@/components/PriceDisplay";
+import { ProjectEnrichment } from "@/components/ProjectEnrichment";
 import { LeadForm } from "@/components/LeadForm";
 import { fetchProjectBySlug, fetchProjects } from "@/lib/data";
 import { getSiteUrl, resolveTenant } from "@/lib/tenant";
@@ -92,6 +93,8 @@ export default async function ProjectDetailPage({
             {project.description}
           </p>
         )}
+
+        <ProjectEnrichment metadata={project.metadata} />
 
         <section className="mt-8 border-t border-stone-100 pt-8">
           <h2 className="text-xl font-bold text-stone-900">Pricing</h2>
