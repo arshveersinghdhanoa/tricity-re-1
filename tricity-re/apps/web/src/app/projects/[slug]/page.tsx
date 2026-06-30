@@ -3,6 +3,7 @@ import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { PriceDisplay } from "@/components/PriceDisplay";
 import { ProjectEnrichment } from "@/components/ProjectEnrichment";
+import { LeadForm } from "@/components/LeadForm";
 import { fetchProjectBySlug, fetchProjects } from "@/lib/data";
 import { getSiteUrl, resolveTenant } from "@/lib/tenant";
 import {
