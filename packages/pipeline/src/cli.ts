@@ -2,8 +2,8 @@
 import { inspectAll, inspectPortal } from "./inspect.js";
 import { scrapePsrera, scrapeGmada } from "./scrape.js";
 import { promoteProjects } from "./promote.js";
-import { importPrices } from "./prices.js";
 import { importStagingPrices } from "./staging-prices.js";
+import { importStagingProjects } from "./staging-projects.js";
 import type { PortalId } from "./config.js";
 import { PORTALS } from "./config.js";
 
@@ -73,7 +73,7 @@ async function main(): Promise<void> {
       const portal = getArg("portal") ?? "psrera";
       switch (portal) {
         case "psrera": {
-          const result = await scrapePsrera({ dryRun: true, tenantId: getArg("tenant") });
+          const result = await scrapePsrera({ dryRun: true, tenantId: getArg("tenant"), source: getArg("source") as "excel" | "pdf" | undefined, file: getArg("file") });
           console.log(JSON.stringify(result, null, 2));
           break;
         }
@@ -93,7 +93,7 @@ async function main(): Promise<void> {
       const portal = getArg("portal") ?? "psrera";
       switch (portal) {
         case "psrera": {
-          const result = await scrapePsrera({ tenantId: getArg("tenant") });
+          const result = await scrapePsrera({ tenantId: getArg("tenant"), source: getArg("source") as "excel" | "pdf" | undefined, file: getArg("file") });
           console.log(JSON.stringify(result, null, 2));
           process.exit(result.errors.length > 0 ? 1 : 0);
         }
@@ -116,14 +116,6 @@ async function main(): Promise<void> {
       break;
     }
 
-    case "import-prices": {
-      const filePath = getArg("file") ?? "data/prices.json";
-      const result = await importPrices(filePath);
-      console.log(JSON.stringify(result, null, 2));
-      process.exit(result.imported === 0 && result.errors.length > 0 ? 1 : 0);
-      break;
-    }
-
     case "stage-prices": {
       const result = await importStagingPrices({
         file: getArg("file"),
@@ -135,9 +127,20 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "stage-projects": {
+      const result = await importStagingProjects({
+        file: getArg("file"),
+        tenantId: getArg("tenant"),
+        dryRun: hasFlag("dry-run"),
+      });
+      console.log(JSON.stringify(result, null, 2));
+      process.exit(result.inserted === 0 && result.errors.length > 0 ? 1 : 0);
+      break;
+    }
+
     default:
       console.log(
-        `Usage: tricity-pipeline <inspect|dry-run|scrape|promote|import-prices|stage-prices> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N] [--file=path/to/json] [--dry-run]`,
+        `Usage: tricity-pipeline <inspect|dry-run|scrape|promote|stage-prices|stage-projects> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N] [--file=path/to/json] [--source=excel|pdf] [--dry-run]`,
       );
       process.exit(command ? 1 : 0);
       break;

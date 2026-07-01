@@ -1,0 +1,38 @@
+[
+  {
+    "reraNumber": "PBRERA-SAS81-PR0522",
+    "priceType": "asking",
+    "amount": 8500,
+    "verified": false,
+    "source": null,
+    "area": 1481,
+    "areaUnit": "sqft"
+  },
+  {
+    "reraNumber": "PBRERA-SAS81-PR0383",
+    "priceType": "asking",
+    "amount": 5210,
+    "verified": false,
+    "source": null,
+    "area": 1251,
+    "areaUnit": "sqft"
+  },
+  {
+    "reraNumber": "PBRERA-SAS81-PR0391",
+    "priceType": "asking",
+    "amount": 12000,
+    "verified": false,
+    "source": null,
+    "area": 2601,
+    "areaUnit": "sqft"
+  },
+  {
+    "reraNumber": "PBRERA-SAS80-PR0398",
+    "priceType": "asking",
+    "amount": 9750,
+    "verified": false,
+    "source": null,
+    "area": 1230,
+    "areaUnit": "sqft"
+  }
+]

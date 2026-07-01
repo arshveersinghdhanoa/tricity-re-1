@@ -25,12 +25,16 @@ export function PriceDisplay({ price }: { price: PriceRecord }) {
         )}
         <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
           {display.label}
+          {display.area ? (
+            <span className="ml-1 font-normal normal-case text-stone-400">· {display.area.toLocaleString("en-IN")} {display.areaUnit ?? "sqft"}</span>
+          ) : (
+            <span className="ml-1 font-normal normal-case text-stone-400">· per {display.unit}</span>
+          )}
         </p>
       </div>
       
       <p className="mt-2 text-3xl font-extrabold text-stone-900 tracking-tight">
-        ₹{display.amount.toLocaleString("en-IN")}
-        <span className="text-sm font-normal text-stone-500"> / {display.unit}</span>
+        ₹{(display.totalAmount ?? display.amount).toLocaleString("en-IN")}
       </p>
       
       {display.source && (

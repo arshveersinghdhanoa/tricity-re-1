@@ -55,11 +55,48 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
         .maybeSingle();
 
       if (existing.data) {
+        // Update metadata if the staging record has richer data
+        const rawPayload = row.raw_payload as Record<string, unknown>;
+        const newMetadata: Record<string, unknown> = {};
+        if (rawPayload.district) newMetadata.district = rawPayload.district;
+        if (rawPayload.promoterName || rawPayload["Promoter's Name"]) newMetadata.promoter = rawPayload.promoterName || rawPayload["Promoter's Name"];
+        if (rawPayload.promoterAddress || rawPayload["Project Address Line1"]) {
+          const addr1 = rawPayload.promoterAddress || rawPayload["Project Address Line1"];
+          const addr2 = rawPayload["Project Address Line2"];
+          newMetadata.address = addr2 ? `${addr1}, ${addr2}` : addr1;
+        }
+        if (rawPayload.pinCode || rawPayload["PIN Code"]) newMetadata.pin_code = rawPayload.pinCode || String(Math.floor(Number(rawPayload["PIN Code"])));
+        if (rawPayload.website) newMetadata.website = rawPayload.website;
+        if (rawPayload.registrationDate || rawPayload["Registration Issue Date"]) newMetadata.registration_date = rawPayload.registrationDate || rawPayload["Registration Issue Date"];
+        if (rawPayload.validUpto || rawPayload["Registration Valid Upto Date"]) newMetadata.valid_upto = rawPayload.validUpto || rawPayload["Registration Valid Upto Date"];
+
+        // Build description
+        const descParts: string[] = [];
+        const promoter = rawPayload.promoterName || rawPayload["Promoter's Name"];
+        const addr = rawPayload.promoterAddress || rawPayload["Project Address Line1"];
+        const pin = rawPayload.pinCode || (rawPayload["PIN Code"] ? String(Math.floor(Number(rawPayload["PIN Code"]))) : "");
+        const valid = rawPayload.validUpto || rawPayload["Registration Valid Upto Date"];
+        if (promoter) descParts.push(`Promoter: ${promoter}`);
+        if (addr) descParts.push(`Address: ${addr}`);
+        if (pin) descParts.push(`PIN: ${pin}`);
+        if (valid) descParts.push(`Valid upto: ${valid}`);
+        const description = descParts.length > 0 ? descParts.join(". ") : null;
+
+        // Only update if we have new metadata or description
+        const updatePayload: Record<string, unknown> = {};
+        if (Object.keys(newMetadata).length > 0) updatePayload.metadata = newMetadata;
+        if (description) updatePayload.description = description;
+        if (row.parsed_status && row.parsed_status !== "active") updatePayload.status = row.parsed_status;
+
+        if (Object.keys(updatePayload).length > 0) {
+          await supabase.from("projects").update(updatePayload).eq("id", existing.data.id);
+        }
+
         await supabase.from("status_transitions").insert({
           project_id: existing.data.id,
           from_status: "active",
           to_status: row.parsed_status ?? "active",
-          source: "psrera_pdf",
+          source: "psrera",
         });
 
         await supabase.from("promotion_log").insert({
@@ -67,7 +104,7 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
           staging_id: row.id,
           production_id: existing.data.id,
           action: "skipped_dup",
-          details: { reason: "rera_number already exists" },
+          details: { reason: "rera_number already exists", updated: Object.keys(updatePayload).length > 0 },
         });
 
         await supabase
@@ -79,6 +116,31 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
         continue;
       }
 
+      const rawPayload = row.raw_payload as Record<string, unknown>;
+      const metadata: Record<string, unknown> = {};
+      if (rawPayload.district) metadata.district = rawPayload.district;
+      if (rawPayload.promoterName || rawPayload["Promoter's Name"]) metadata.promoter = rawPayload.promoterName || rawPayload["Promoter's Name"];
+      if (rawPayload.promoterAddress || rawPayload["Project Address Line1"]) {
+        const addr1 = rawPayload.promoterAddress || rawPayload["Project Address Line1"];
+        const addr2 = rawPayload["Project Address Line2"];
+        metadata.address = addr2 ? `${addr1}, ${addr2}` : addr1;
+      }
+      if (rawPayload.pinCode || rawPayload["PIN Code"]) metadata.pin_code = rawPayload.pinCode || String(Math.floor(Number(rawPayload["PIN Code"])));
+      if (rawPayload.website) metadata.website = rawPayload.website;
+      if (rawPayload.registrationDate || rawPayload["Registration Issue Date"]) metadata.registration_date = rawPayload.registrationDate || rawPayload["Registration Issue Date"];
+      if (rawPayload.validUpto || rawPayload["Registration Valid Upto Date"]) metadata.valid_upto = rawPayload.validUpto || rawPayload["Registration Valid Upto Date"];
+
+      const descParts: string[] = [];
+      const promoter = rawPayload.promoterName || rawPayload["Promoter's Name"];
+      const addr = rawPayload.promoterAddress || rawPayload["Project Address Line1"];
+      const pin = rawPayload.pinCode || (rawPayload["PIN Code"] ? String(Math.floor(Number(rawPayload["PIN Code"]))) : "");
+      const valid = rawPayload.validUpto || rawPayload["Registration Valid Upto Date"];
+      if (promoter) descParts.push(`Promoter: ${promoter}`);
+      if (addr) descParts.push(`Address: ${addr}`);
+      if (pin) descParts.push(`PIN: ${pin}`);
+      if (valid) descParts.push(`Valid upto: ${valid}`);
+      const description = descParts.length > 0 ? descParts.join(". ") : `Imported from PSRERA. District: ${rawPayload.district ?? "unknown"}`;
+
       const { data: newProject, error: insertError } = await supabase
         .from("projects")
         .insert({
@@ -87,7 +149,8 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
           name: row.parsed_name ?? row.rera_number,
           slug: slugify(row.parsed_name ?? row.rera_number, row.rera_number),
           status: row.parsed_status ?? "active",
-          description: `Imported from PSRERA PDF. District: ${(row.raw_payload as Record<string, unknown>)?.district ?? "unknown"}`,
+          description,
+          metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         })
         .select("id")
         .single();
@@ -160,6 +223,12 @@ export async function promoteStagingPrices(tenantId: string): Promise<{ promoted
         continue;
       }
 
+      // Skip known example/template RERA numbers that should never reach production
+      const FAKE_RERA = new Set(["PBRERA-SAS06-PR0123"]);
+      if (FAKE_RERA.has(reraNumber)) {
+        continue;
+      }
+
       const { data: project } = await supabase
         .from("projects")
         .select("id")
@@ -183,6 +252,8 @@ export async function promoteStagingPrices(tenantId: string): Promise<{ promoted
         unit: "sqft",
         verified: isGenuinelyVerified,
         source: isGenuinelyVerified ? sp.source : null,
+        area: sp.area ?? null,
+        area_unit: sp.area_unit ?? null,
         recorded_at: sp.scraped_at ?? new Date().toISOString(),
       });
 

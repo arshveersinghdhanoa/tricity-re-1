@@ -15,7 +15,7 @@ Controlling spec: `../Tricity_RE_Dev_Handoff_Brief.md` (parent folder).
 | M1 | Stand-up, deploy, schema, empty production |
 | M2 | ToS/robots review + `--inspect` report |
 | M3 | Pipeline build (post-approval) |
-| M4 | Hot-lead notification (TODO in leads API) |
+| M4 | Hot-lead notification (implemented via SMTP/nodemailer) |
 | M5 | nayagaon / ajitgarh tenant clones |
 | M6 | Handover |
 

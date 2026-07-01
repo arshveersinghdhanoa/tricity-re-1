@@ -24,6 +24,8 @@ function getPricingSummary(project: ProjectRow) {
       source: transacted.source,
       unit: transacted.unit,
       currency: transacted.currency,
+      area: transacted.area ? Number(transacted.area) : null,
+      areaUnit: transacted.area_unit ?? null,
     });
     return { display, count: project.prices.length };
   }
@@ -37,6 +39,8 @@ function getPricingSummary(project: ProjectRow) {
       source: asking.source,
       unit: asking.unit,
       currency: asking.currency,
+      area: asking.area ? Number(asking.area) : null,
+      areaUnit: asking.area_unit ?? null,
     });
     return { display, count: project.prices.length };
   }
@@ -90,10 +94,14 @@ export function ProjectCard({ project, compact = false }: ProjectCardProps) {
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
               {pricing.display.label}
+              {pricing.display.area ? (
+                <span className="ml-1 font-normal normal-case text-stone-400">· {pricing.display.area.toLocaleString("en-IN")} {pricing.display.areaUnit ?? "sqft"}</span>
+              ) : (
+                <span className="ml-1 font-normal normal-case text-stone-400">· per {pricing.display.unit}</span>
+              )}
             </p>
             <p className="text-base font-extrabold text-stone-900">
-              ₹{pricing.display.amount.toLocaleString("en-IN")}
-              <span className="text-xs font-normal text-stone-500"> / {pricing.display.unit}</span>
+              ₹{(pricing.display.totalAmount ?? pricing.display.amount).toLocaleString("en-IN")}
             </p>
             {pricing.count > 1 && (
               <p className="text-[10px] text-stone-400 mt-0.5">+{pricing.count - 1} more price record(s)</p>

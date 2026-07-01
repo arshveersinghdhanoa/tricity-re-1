@@ -1,4 +1,4 @@
-import { downloadPdf, parsePdf, type ParserProjectRecord } from "./psrera/index.js";
+import { downloadPdf, parsePdf, parseExcel, type ParserProjectRecord } from "./psrera/index.js";
 import { writeManyStaging, resolveTenantId, type StagingProjectInsert } from "./staging.js";
 import { SCRAPER_CONFIG } from "./config.js";
 import { isOffPeakHour } from "./config.js";
@@ -16,8 +16,16 @@ export interface ScrapeResult {
   offPeak: boolean;
 }
 
-export async function scrapePsrera(options: { dryRun?: boolean; tenantId?: string } = {}): Promise<ScrapeResult> {
+export interface ScrapePsreraOptions {
+  dryRun?: boolean;
+  tenantId?: string;
+  source?: "excel" | "pdf";
+  file?: string;
+}
+
+export async function scrapePsrera(options: ScrapePsreraOptions = {}): Promise<ScrapeResult> {
   const dryRun = options.dryRun ?? false;
+  const source = options.source ?? "excel";
   const tenantSlug = options.tenantId ?? process.env.NEXT_PUBLIC_DEFAULT_TENANT ?? "newchandigarh";
   const tenantId = await resolveTenantId(tenantSlug);
   if (!tenantId && !dryRun) {
@@ -26,38 +34,55 @@ export async function scrapePsrera(options: { dryRun?: boolean; tenantId?: strin
   const offPeak = isOffPeakHour();
   const errors: string[] = [];
 
-  console.log(`[psrera] Downloading PDF...`);
-  let buffer: Buffer;
-  try {
-    const result = await downloadPdf();
-    buffer = result.buffer;
-  } catch (err) {
-    return {
-      portal: "psrera",
-      recordsFound: 0,
-      recordsValid: 0,
-      recordsWritten: 0,
-      errors: [`Download failed: ${err instanceof Error ? err.message : String(err)}`],
-      dryRun,
-      offPeak,
-    };
+  console.log(`[psrera] Source: ${source}`);
+
+  let records: ParserProjectRecord[];
+  let parseErrors: string[];
+
+  if (source === "excel") {
+    const parseResult = await parseExcel({ file: options.file });
+    records = parseResult.records;
+    parseErrors = parseResult.errors;
+    console.log(`[psrera] Excel: ${records.length} records found (date: ${parseResult.pdfDate})`);
+  } else {
+    console.log(`[psrera] Downloading PDF...`);
+    let buffer: Buffer;
+    try {
+      const result = await downloadPdf();
+      buffer = result.buffer;
+    } catch (err) {
+      return {
+        portal: "psrera",
+        recordsFound: 0,
+        recordsValid: 0,
+        recordsWritten: 0,
+        errors: [`Download failed: ${err instanceof Error ? err.message : String(err)}`],
+        dryRun,
+        offPeak,
+      };
+    }
+
+    console.log(`[psrera] Parsing PDF (${(buffer.length / 1024 / 1024).toFixed(1)} MB)...`);
+    const parseResult = await parsePdf(buffer);
+    records = parseResult.records;
+    parseErrors = parseResult.errors;
+    console.log(`[psrera] PDF: ${records.length} records (total: ${parseResult.totalProjects}, lapsed: ${parseResult.lapsedProjects}, date: ${parseResult.pdfDate})`);
   }
 
-  console.log(`[psrera] Parsing PDF (${(buffer.length / 1024 / 1024).toFixed(1)} MB)...`);
-  const parseResult = await parsePdf(buffer);
-  errors.push(...parseResult.errors.map((e) => `Parse: ${e}`));
+  errors.push(...parseErrors.map((e) => `Parse: ${e}`));
 
-  console.log(`[psrera] Found ${parseResult.records.length} records (${parseResult.totalProjects} total, ${parseResult.lapsedProjects} lapsed, PDF date: ${parseResult.pdfDate})`);
-
-  const stagingRecords: StagingProjectInsert[] = parseResult.records.map((r) => buildStagingRecord(r, tenantId));
+  const stagingRecords: StagingProjectInsert[] = records.map((r) => buildStagingRecord(r, tenantId));
 
   const validRecords = stagingRecords.filter((r) => r.validation_status === "valid");
 
   if (dryRun) {
     console.log(`[psrera] DRY RUN — would write ${validRecords.length} valid records to staging`);
+    if (validRecords.length > 0) {
+      console.log(`[psrera] Sample: ${validRecords.slice(0, 3).map((r) => `${r.rera_number} (${r.parsed_name})`).join(", ")}`);
+    }
     return {
       portal: "psrera",
-      recordsFound: parseResult.records.length,
+      recordsFound: records.length,
       recordsValid: validRecords.length,
       recordsWritten: 0,
       errors,
@@ -78,7 +103,7 @@ export async function scrapePsrera(options: { dryRun?: boolean; tenantId?: strin
 
   return {
     portal: "psrera",
-    recordsFound: parseResult.records.length,
+    recordsFound: records.length,
     recordsValid: validRecords.length,
     recordsWritten: writeResult.inserted,
     errors,

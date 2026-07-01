@@ -17,10 +17,13 @@ export const PORTALS: Record<
     robotsUrl: "https://rera.punjab.gov.in/robots.txt",
     pdfUrl: "https://rera.punjab.gov.in/pdf/registered-projects/List_of_Registered_Projects.pdf",
     selectors: {
-      projectList: "PDF at /pdf/registered-projects/List_of_Registered_Projects.pdf (mapped M3)",
-      projectDetail: "PDF-parsed — see psrera/parser.ts",
-      reraNumber: "PDF-parsed — regex /PBRERA-[A-Z0-9]+-[A-Z]{1,2}\\d{3,}/",
-      status: "PDF-parsed — typeOfProject field from tabular PDF",
+      projectList: "Excel at /reraindex/publicview/projectinfo (download) OR PDF at /pdf/registered-projects/List_of_Registered_Projects.pdf",
+      projectDetail: "Excel: Registration Number, Project Name, District Name, Promoter's Name, Address, PIN, Registration Issue Date, Valid Upto. PDF: tabular columns via pdfjs-dist (see psrera/parser.ts)",
+      reraNumber: "Excel: Registration Number column. PDF: regex /PBRERA-[A-Z0-9]+-[A-Z]{1,2}\\d{3,}/",
+      district: "Excel: District Name column. PDF: tabular column mapping (xMin: 70, xMax: 145)",
+      promoter: "Excel: Promoter's Name column. PDF: tabular column (xMin: 145, xMax: 255)",
+      status: "Excel: Registration Valid Upto Date determines active/lapsed. PDF: typeOfProject field",
+      metadata: "Excel: district, promoter, address, pin_code, website, registration_date, valid_upto all extracted into raw_payload",
     },
   },
   gmada: {

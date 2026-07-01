@@ -13,15 +13,16 @@
     "dry-run": "node dist/cli.js dry-run",
     "scrape": "node dist/cli.js scrape",
     "promote": "node dist/cli.js promote",
-    "import-prices": "node dist/cli.js import-prices",
-    "stage-prices": "node dist/cli.js stage-prices"
+    "stage-prices": "node dist/cli.js stage-prices",
+    "stage-projects": "node dist/cli.js stage-projects"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",
     "@tricity/core": "workspace:*",
     "cheerio": "^1.2.0",
     "pdf-parse": "^2.4.5",
-    "pdfjs-dist": "^6.0.227"
+    "pdfjs-dist": "^6.0.227",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "typescript": "^5.7.2",

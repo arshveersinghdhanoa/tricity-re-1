@@ -21,6 +21,8 @@ export interface StagingPriceEntry {
   source: string | null;
   currency?: string;
   unit?: string;
+  area?: number | null;
+  areaUnit?: string | null;
 }
 
 export interface ImportStagingPricesResult {
@@ -129,6 +131,8 @@ export async function importStagingPrices(
       amount: e.amount,
       verified: e.verified,
       source: e.source,
+      area: e.area ?? null,
+      area_unit: e.areaUnit ?? null,
       raw_payload: e as unknown as Record<string, unknown>,
       validation_status: "valid",
       source_portal: "manual_entry",

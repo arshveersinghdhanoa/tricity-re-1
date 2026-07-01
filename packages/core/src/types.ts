@@ -7,6 +7,8 @@ export interface PriceRecord {
   unit?: string;
   verified: boolean;
   source: string | null;
+  area?: number | null;
+  areaUnit?: string | null;
 }
 
 export interface GuideShell {

@@ -118,6 +118,8 @@ export default async function ProjectDetailPage({
                     source: price.source,
                     unit: price.unit,
                     currency: price.currency,
+                    area: price.area ? Number(price.area) : null,
+                    areaUnit: price.area_unit ?? null,
                   }}
                 />
               ))}
