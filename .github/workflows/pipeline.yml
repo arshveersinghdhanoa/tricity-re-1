@@ -6,6 +6,10 @@ on:
     - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
+      portal:
+        description: "Portal to scrape (psrera or gmada)"
+        default: "psrera"
+        required: false
       limit:
         description: "Max records to promote"
         default: "2000"
@@ -37,38 +41,34 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
-          cache-dependency-path: tricity-re/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        working-directory: tricity-re
         run: pnpm install --frozen-lockfile
 
       - name: Build core package
-        working-directory: tricity-re
         run: pnpm --filter @tricity/core build
 
       - name: Build pipeline
-        working-directory: tricity-re
         run: pnpm --filter @tricity/pipeline build
 
       - name: Scrape PSRERA projects
         id: scrape
-        working-directory: tricity-re/packages/pipeline
+        working-directory: packages/pipeline
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node dist/cli.js scrape --portal=psrera --source=pdf --limit=2000
+        run: node dist/cli.js scrape --portal=${{ github.event.inputs.portal || 'psrera' }} --source=pdf --limit=2000
 
       - name: Promote records to production
         id: promote
-        working-directory: tricity-re/packages/pipeline
+        working-directory: packages/pipeline
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node dist/cli.js promote --limit=${{ github.event.inputs.limit || '2000' }}
 
       - name: Revalidate site cache
-        working-directory: tricity-re
         env:
           SITE_URL: ${{ secrets.SITE_URL }}
           REVALIDATION_SECRET: ${{ secrets.REVALIDATION_SECRET }}
