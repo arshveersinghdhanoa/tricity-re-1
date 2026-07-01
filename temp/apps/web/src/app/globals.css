@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply text-stone-900 antialiased;
+  background-color: var(--brand-50);
+}
+
+a {
+  @apply text-brand-600 underline-offset-2 hover:underline;
+}
+
+/* ── Site-wide background layers ── */
+
+.site-bg-base {
+  background: linear-gradient(
+    165deg,
+    var(--brand-50) 0%,
+    #fafaf9 35%,
+    color-mix(in srgb, var(--brand-100) 40%, #fafaf9) 70%,
+    var(--brand-50) 100%
+  );
+}
+
+.site-bg-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--brand-300) 12%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--brand-300) 12%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, black 20%, transparent 75%);
+}
+
+.site-bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.site-bg-blob {
+  filter: blur(80px);
+  opacity: 0.55;
+}
+
+.site-bg-blob-a {
+  background: radial-gradient(circle, var(--brand-300) 0%, transparent 70%);
+}
+
+.site-bg-blob-b {
+  background: radial-gradient(circle, var(--brand-200) 0%, transparent 70%);
+  opacity: 0.45;
+}
+
+.site-bg-blob-c {
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand-400) 50%, transparent) 0%, transparent 70%);
+  opacity: 0.35;
+}
+
+/* ── Sticky site header ── */
+
+.site-header-shell {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-50) 92%, white) 0%,
+    color-mix(in srgb, white 88%, var(--brand-50)) 100%
+  );
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--brand-200) 50%, transparent),
+    0 4px 24px -4px color-mix(in srgb, var(--brand-900) 6%, transparent);
+}
+
+.site-header-grid {
+  background-image: radial-gradient(var(--brand-300) 0.75px, transparent 0.75px);
+  background-size: 20px 20px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+}
+
+.site-header-accent {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--brand-400) 20%,
+    var(--brand-600) 50%,
+    var(--brand-400) 80%,
+    transparent 100%
+  );
+}
+
+.site-nav-link {
+  @apply no-underline px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap sm:px-3.5;
+  @apply text-stone-600 hover:text-brand-800;
+  background: transparent;
+}
+
+.site-nav-link:hover {
+  background: color-mix(in srgb, var(--brand-100) 70%, white);
+}
+
+/* ── Page header panels ── */
+
+.page-header {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, white 75%, var(--brand-50)) 0%,
+    color-mix(in srgb, var(--brand-50) 90%, white) 50%,
+    color-mix(in srgb, white 80%, var(--brand-100)) 100%
+  );
+}
+
+.page-header-inner {
+  background: linear-gradient(
+    to bottom right,
+    color-mix(in srgb, var(--brand-100) 25%, transparent),
+    transparent 55%
+  );
+}
+
+.page-header-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--brand-300) 15%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--brand-300) 15%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ── Footer ── */
+
+.site-footer-shell {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-50) 30%, #f5f5f4) 0%,
+    color-mix(in srgb, var(--brand-100) 25%, #e7e5e4) 100%
+  );
+  border-top: 1px solid color-mix(in srgb, var(--brand-200) 45%, #e7e5e4);
+}
+
+.bg-grid-pattern {
+  background-image: radial-gradient(var(--brand-300) 1px, transparent 1px);
+  background-size: 24px 24px;
+}

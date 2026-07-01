@@ -1,0 +1,70 @@
+[
+  {
+    "reraNumber": "PBRERA-KPT40-PR1293",
+    "prices": [
+      {
+        "priceType": "asking",
+        "amount": 234,
+        "verified": false,
+        "source": null
+      },
+      {
+        "priceType": "transacted",
+        "amount": 192,
+        "verified": true,
+        "source": "REAL ESTATE REGULATORY AUTHORITY PUNJAB"
+      }
+    ]
+  },
+  {
+    "reraNumber": "PBRERA-ASR02-PR1066",
+    "prices": [
+      {
+        "priceType": "asking",
+        "amount": 325,
+        "verified": false,
+        "source": null
+      },
+      {
+        "priceType": "transacted",
+        "amount": 290,
+        "verified": true,
+        "source": "REAL ESTATE REGULATORY AUTHORITY PUNJAB"
+      }
+    ]
+  },
+  {
+    "reraNumber": "PBRERA-ASR03-PR0498",
+    "prices": [
+      {
+        "priceType": "asking",
+        "amount": 355,
+        "verified": false,
+        "source": null
+      },
+      {
+        "priceType": "transacted",
+        "amount": 313,
+        "verified": true,
+        "source": "REAL ESTATE REGULATORY AUTHORITY PUNJAB"
+      }
+    ]
+  },
+  {
+    "reraNumber": "PBRERA-PTL61-PR1031",
+    "prices": [
+      {
+        "priceType": "asking",
+        "amount": 285,
+        "verified": false,
+        "source": null
+      },
+      {
+        "priceType": "transacted",
+        "amount": 160,
+        "verified": true,
+        "source": "REAL ESTATE REGULATORY AUTHORITY PUNJAB"
+      }
+    ]
+  }
+]

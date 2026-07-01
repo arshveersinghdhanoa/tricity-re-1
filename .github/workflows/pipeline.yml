@@ -6,13 +6,9 @@ on:
     - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
-      portal:
-        description: "Portal to scrape (psrera or gmada)"
-        default: "psrera"
-        required: false
       limit:
         description: "Max records to promote"
-        default: "100"
+        default: "2000"
         required: false
 
 permissions:
@@ -55,19 +51,31 @@ jobs:
         working-directory: tricity-re
         run: pnpm --filter @tricity/pipeline build
 
-      - name: Download PSRERA PDF
+      - name: Download PSRERA data
         working-directory: tricity-re
         run: |
           mkdir -p tmp
-          curl -sL -o tmp/registered-projects.pdf "https://rera.punjab.gov.in/pdf/registered-projects/List_of_Registered_Projects.pdf" || echo "Download failed — will use cached PDF if available"
+          # Try PDF (always available from PSRERA)
+          curl -sL -o tmp/registered-projects.pdf "https://rera.punjab.gov.in/pdf/registered-projects/List_of_Registered_Projects.pdf" || echo "PDF download failed — will use cached file if available"
 
-      - name: Scrape PSRERA
+      - name: Detect source and scrape
         id: scrape
         working-directory: tricity-re
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: pnpm --filter @tricity/pipeline scrape --portal=${{ github.event.inputs.portal || 'psrera' }}
+        run: |
+          SOURCE="pdf"
+          if [ -f "tmp/registered-projects.xls" ]; then
+            SOURCE="excel"
+          elif [ -f "tmp/registered-projects.xlsx" ]; then
+            SOURCE="excel"
+          elif [ ! -f "tmp/registered-projects.pdf" ]; then
+            echo "No data file found — skipping scrape"
+            exit 0
+          fi
+          echo "Using source: $SOURCE"
+          pnpm --filter @tricity/pipeline -- scrape --portal=psrera --source=$SOURCE --limit=2000
 
       - name: Promote records to production
         id: promote
@@ -75,7 +83,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: pnpm --filter @tricity/pipeline promote --limit=${{ github.event.inputs.limit || '100' }}
+        run: pnpm --filter @tricity/pipeline -- promote --limit=${{ github.event.inputs.limit || '2000' }}
 
       - name: Revalidate site cache
         working-directory: tricity-re
