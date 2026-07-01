@@ -51,39 +51,21 @@ jobs:
         working-directory: tricity-re
         run: pnpm --filter @tricity/pipeline build
 
-      - name: Download PSRERA data
-        working-directory: tricity-re
-        run: |
-          mkdir -p tmp
-          # Try PDF (always available from PSRERA)
-          curl -sL -o tmp/registered-projects.pdf "https://rera.punjab.gov.in/pdf/registered-projects/List_of_Registered_Projects.pdf" || echo "PDF download failed — will use cached file if available"
-
-      - name: Detect source and scrape
+      - name: Scrape PSRERA projects
         id: scrape
-        working-directory: tricity-re
+        working-directory: tricity-re/packages/pipeline
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          SOURCE="pdf"
-          if [ -f "tmp/registered-projects.xls" ]; then
-            SOURCE="excel"
-          elif [ -f "tmp/registered-projects.xlsx" ]; then
-            SOURCE="excel"
-          elif [ ! -f "tmp/registered-projects.pdf" ]; then
-            echo "No data file found — skipping scrape"
-            exit 0
-          fi
-          echo "Using source: $SOURCE"
-          pnpm --filter @tricity/pipeline -- scrape --portal=psrera --source=$SOURCE --limit=2000
+        run: node dist/cli.js scrape --portal=psrera --source=pdf --limit=2000
 
       - name: Promote records to production
         id: promote
-        working-directory: tricity-re
+        working-directory: tricity-re/packages/pipeline
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: pnpm --filter @tricity/pipeline -- promote --limit=${{ github.event.inputs.limit || '2000' }}
+        run: node dist/cli.js promote --limit=${{ github.event.inputs.limit || '2000' }}
 
       - name: Revalidate site cache
         working-directory: tricity-re
