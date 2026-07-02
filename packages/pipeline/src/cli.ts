@@ -73,7 +73,7 @@ async function main(): Promise<void> {
       const portal = getArg("portal") ?? "psrera";
       switch (portal) {
         case "psrera": {
-          const result = await scrapePsrera({ dryRun: true, tenantId: getArg("tenant"), source: getArg("source") as "excel" | "pdf" | undefined, file: getArg("file") });
+          const result = await scrapePsrera({ dryRun: true, tenantId: getArg("tenant"), source: getArg("source") as "excel" | "pdf" | undefined, file: getArg("file"), districtFilter: getArg("district") });
           console.log(JSON.stringify(result, null, 2));
           break;
         }
@@ -93,7 +93,7 @@ async function main(): Promise<void> {
       const portal = getArg("portal") ?? "psrera";
       switch (portal) {
         case "psrera": {
-          const result = await scrapePsrera({ tenantId: getArg("tenant"), source: getArg("source") as "excel" | "pdf" | undefined, file: getArg("file") });
+          const result = await scrapePsrera({ tenantId: getArg("tenant"), source: getArg("source") as "excel" | "pdf" | undefined, file: getArg("file"), districtFilter: getArg("district") });
           console.log(JSON.stringify(result, null, 2));
           process.exit(result.errors.length > 0 ? 1 : 0);
         }
@@ -140,7 +140,7 @@ async function main(): Promise<void> {
 
     default:
       console.log(
-        `Usage: tricity-pipeline <inspect|dry-run|scrape|promote|stage-prices|stage-projects> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N] [--file=path/to/json] [--source=excel|pdf] [--dry-run]`,
+        `Usage: tricity-pipeline <inspect|dry-run|scrape|promote|stage-prices|stage-projects> [--portal=psrera|gmada] [--tenant=<slug>] [--limit=N] [--file=path/to/json] [--source=excel|pdf] [--district=<name>] [--dry-run]`,
       );
       process.exit(command ? 1 : 0);
       break;

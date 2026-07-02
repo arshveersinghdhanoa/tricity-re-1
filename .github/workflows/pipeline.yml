@@ -58,7 +58,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node dist/cli.js scrape --portal=${{ github.event.inputs.portal || 'psrera' }} --source=pdf --limit=2000
+        run: node dist/cli.js scrape --portal=${{ github.event.inputs.portal || 'psrera' }} --source=pdf --district=SAS Nagar --limit=2000
 
       - name: Stage prices from data file
         id: stage-prices

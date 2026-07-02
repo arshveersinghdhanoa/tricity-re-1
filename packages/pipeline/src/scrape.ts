@@ -21,6 +21,7 @@ export interface ScrapePsreraOptions {
   tenantId?: string;
   source?: "excel" | "pdf";
   file?: string;
+  districtFilter?: string;
 }
 
 export async function scrapePsrera(options: ScrapePsreraOptions = {}): Promise<ScrapeResult> {
@@ -71,7 +72,14 @@ export async function scrapePsrera(options: ScrapePsreraOptions = {}): Promise<S
 
   errors.push(...parseErrors.map((e) => `Parse: ${e}`));
 
-  const stagingRecords: StagingProjectInsert[] = records.map((r) => buildStagingRecord(r, tenantId));
+  const districtFilter = options.districtFilter?.trim();
+  let filteredRecords = records;
+  if (districtFilter) {
+    filteredRecords = records.filter((r) => r.district === districtFilter);
+    console.log(`[psrera] Filtered to ${filteredRecords.length} records (district: ${districtFilter}) from ${records.length} total`);
+  }
+
+  const stagingRecords: StagingProjectInsert[] = filteredRecords.map((r) => buildStagingRecord(r, tenantId));
 
   const validRecords = stagingRecords.filter((r) => r.validation_status === "valid");
 
