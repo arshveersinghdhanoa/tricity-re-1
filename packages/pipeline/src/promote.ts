@@ -32,30 +32,40 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
 
   if (!rows || rows.length === 0) {
     console.log("[promote] No unpromoted valid staging rows found");
-    // Still try to promote any orphaned staging_prices
     const priceResult = await promoteStagingPrices(tenantId);
     pricesPromoted += priceResult.promoted;
     errors.push(...priceResult.errors);
     return { promoted: 0, skipped: 0, pricesPromoted, errors };
   }
 
+  const reraNumbers = rows.map((r) => r.rera_number).filter((r) => /^PBRERA-/.test(r));
+  const existingMap = new Map<string, string>();
+
+  for (let i = 0; i < reraNumbers.length; i += 500) {
+    const batch = reraNumbers.slice(i, i + 500);
+    const { data: existing } = await supabase
+      .from("projects")
+      .select("id, rera_number")
+      .eq("tenant_id", tenantId)
+      .in("rera_number", batch);
+    if (existing) {
+      for (const p of existing) existingMap.set(p.rera_number, p.id);
+    }
+  }
+
+  const now = new Date().toISOString();
+  const stagingIdsToMark: string[] = [];
+
   for (const row of rows) {
     try {
-      // Prevent fabricated project numbers from entering production (Non-negotiable #2)
       if (!/^PBRERA-/.test(row.rera_number)) {
         errors.push(`Refusing non-PSRERA rera_number: ${row.rera_number}`);
         continue;
       }
 
-      const existing = await supabase
-        .from("projects")
-        .select("id")
-        .eq("tenant_id", tenantId)
-        .eq("rera_number", row.rera_number)
-        .maybeSingle();
+      const existingId = existingMap.get(row.rera_number);
 
-      if (existing.data) {
-        // Update metadata if the staging record has richer data
+      if (existingId) {
         const rawPayload = row.raw_payload as Record<string, unknown>;
         const newMetadata: Record<string, unknown> = {};
         if (rawPayload.district) newMetadata.district = rawPayload.district;
@@ -70,7 +80,6 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
         if (rawPayload.registrationDate || rawPayload["Registration Issue Date"]) newMetadata.registration_date = rawPayload.registrationDate || rawPayload["Registration Issue Date"];
         if (rawPayload.validUpto || rawPayload["Registration Valid Upto Date"]) newMetadata.valid_upto = rawPayload.validUpto || rawPayload["Registration Valid Upto Date"];
 
-        // Build description
         const descParts: string[] = [];
         const promoter = rawPayload.promoterName || rawPayload["Promoter's Name"];
         const addr = rawPayload.promoterAddress || rawPayload["Project Address Line1"];
@@ -82,36 +91,16 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
         if (valid) descParts.push(`Valid upto: ${valid}`);
         const description = descParts.length > 0 ? descParts.join(". ") : null;
 
-        // Only update if we have new metadata or description
         const updatePayload: Record<string, unknown> = {};
         if (Object.keys(newMetadata).length > 0) updatePayload.metadata = newMetadata;
         if (description) updatePayload.description = description;
         if (row.parsed_status && row.parsed_status !== "active") updatePayload.status = row.parsed_status;
 
         if (Object.keys(updatePayload).length > 0) {
-          await supabase.from("projects").update(updatePayload).eq("id", existing.data.id);
+          await supabase.from("projects").update(updatePayload).eq("id", existingId);
         }
 
-        await supabase.from("status_transitions").insert({
-          project_id: existing.data.id,
-          from_status: "active",
-          to_status: row.parsed_status ?? "active",
-          source: "psrera",
-        });
-
-        await supabase.from("promotion_log").insert({
-          entity_type: "project",
-          staging_id: row.id,
-          production_id: existing.data.id,
-          action: "skipped_dup",
-          details: { reason: "rera_number already exists", updated: Object.keys(updatePayload).length > 0 },
-        });
-
-        await supabase
-          .from("staging_projects")
-          .update({ promoted_at: new Date().toISOString() })
-          .eq("id", row.id);
-
+        stagingIdsToMark.push(row.id);
         skipped++;
         continue;
       }
@@ -160,26 +149,22 @@ export async function promoteProjects(options: { tenantId?: string; limit?: numb
         continue;
       }
 
-      await supabase.from("promotion_log").insert({
-        entity_type: "project",
-        staging_id: row.id,
-        production_id: newProject.id,
-        action: "promoted",
-        details: { rera_number: row.rera_number },
-      });
-
-      await supabase
-        .from("staging_projects")
-        .update({ promoted_at: new Date().toISOString() })
-        .eq("id", row.id);
-
+      existingMap.set(row.rera_number, newProject.id);
+      stagingIdsToMark.push(row.id);
       promoted++;
     } catch (err) {
       errors.push(`Error processing ${row.rera_number}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  // After promoting projects, promote any valid staging_prices
+  for (let i = 0; i < stagingIdsToMark.length; i += 500) {
+    const batch = stagingIdsToMark.slice(i, i + 500);
+    await supabase
+      .from("staging_projects")
+      .update({ promoted_at: now })
+      .in("id", batch);
+  }
+
   const priceResult = await promoteStagingPrices(tenantId);
   pricesPromoted += priceResult.promoted;
   errors.push(...priceResult.errors);
@@ -214,38 +199,44 @@ export async function promoteStagingPrices(tenantId: string): Promise<{ promoted
   const errors: string[] = [];
   let promoted = 0;
 
+  const reraNumbers = stagingPrices.map((sp) => sp.rera_number).filter(Boolean) as string[];
+  const projectMap = new Map<string, string>();
+
+  for (let i = 0; i < reraNumbers.length; i += 500) {
+    const batch = reraNumbers.slice(i, i + 500);
+    const { data: projects } = await supabase
+      .from("projects")
+      .select("id, rera_number")
+      .eq("tenant_id", tenantId)
+      .in("rera_number", batch);
+    if (projects) {
+      for (const p of projects) projectMap.set(p.rera_number, p.id);
+    }
+  }
+
+  const FAKE_RERA = new Set(["PBRERA-SAS06-PR0123"]);
+  const now = new Date().toISOString();
+  const idsToMark: string[] = [];
+
   for (const sp of stagingPrices) {
     try {
-      // Look up the production project by RERA number
       const reraNumber = sp.rera_number;
       if (!reraNumber) {
         errors.push(`staging_price ${sp.id}: missing rera_number`);
         continue;
       }
+      if (FAKE_RERA.has(reraNumber)) continue;
 
-      // Skip known example/template RERA numbers that should never reach production
-      const FAKE_RERA = new Set(["PBRERA-SAS06-PR0123"]);
-      if (FAKE_RERA.has(reraNumber)) {
-        continue;
-      }
-
-      const { data: project } = await supabase
-        .from("projects")
-        .select("id")
-        .eq("tenant_id", tenantId)
-        .eq("rera_number", reraNumber)
-        .maybeSingle();
-
-      if (!project) {
+      const projectId = projectMap.get(reraNumber);
+      if (!projectId) {
         errors.push(`staging_price ${sp.id}: project ${reraNumber} not in production yet`);
         continue;
       }
 
-      // Non-negotiable #1: only mark verified=true when genuinely sourced
       const isGenuinelyVerified = sp.verified === true && sp.source && sp.source.trim().length > 0;
 
       const { error: insertError } = await supabase.from("prices").insert({
-        project_id: project.id,
+        project_id: projectId,
         price_type: sp.price_type,
         amount: sp.amount,
         currency: "INR",
@@ -254,7 +245,7 @@ export async function promoteStagingPrices(tenantId: string): Promise<{ promoted
         source: isGenuinelyVerified ? sp.source : null,
         area: sp.area ?? null,
         area_unit: sp.area_unit ?? null,
-        recorded_at: sp.scraped_at ?? new Date().toISOString(),
+        recorded_at: sp.scraped_at ?? now,
       });
 
       if (insertError) {
@@ -262,23 +253,19 @@ export async function promoteStagingPrices(tenantId: string): Promise<{ promoted
         continue;
       }
 
-      await supabase.from("promotion_log").insert({
-        entity_type: "price",
-        staging_id: sp.id,
-        production_id: project.id,
-        action: "promoted",
-        details: { rera_number: reraNumber, price_type: sp.price_type, amount: sp.amount, verified: isGenuinelyVerified },
-      });
-
-      await supabase
-        .from("staging_prices")
-        .update({ promoted_at: new Date().toISOString() })
-        .eq("id", sp.id);
-
+      idsToMark.push(sp.id);
       promoted++;
     } catch (err) {
       errors.push(`Error promoting staging_price ${sp.id}: ${err instanceof Error ? err.message : String(err)}`);
     }
+  }
+
+  for (let i = 0; i < idsToMark.length; i += 500) {
+    const batch = idsToMark.slice(i, i + 500);
+    await supabase
+      .from("staging_prices")
+      .update({ promoted_at: now })
+      .in("id", batch);
   }
 
   if (promoted > 0) {

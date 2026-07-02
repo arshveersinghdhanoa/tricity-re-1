@@ -25,7 +25,7 @@ env:
 jobs:
   pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     environment: production
 
     steps:
@@ -59,6 +59,14 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node dist/cli.js scrape --portal=${{ github.event.inputs.portal || 'psrera' }} --source=pdf --limit=2000
+
+      - name: Stage prices from data file
+        id: stage-prices
+        working-directory: packages/pipeline
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node dist/cli.js stage-prices
 
       - name: Promote records to production
         id: promote
